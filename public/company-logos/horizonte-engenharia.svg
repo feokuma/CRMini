@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-labelledby="title">
+  <title>Símbolo Horizonte Engenharia</title>
+  <rect width="120" height="120" rx="30" fill="#eef2f6"/>
+  <path d="M19 89h82M27 81l23-34 16 21 17-41 20 54" fill="none" stroke="#315a78" stroke-linecap="round" stroke-linejoin="round" stroke-width="9"/>
+  <path d="M29 99h64" stroke="#9aaebe" stroke-linecap="round" stroke-width="5"/>
+  <circle cx="83" cy="22" r="7" fill="#d49a52"/>
+</svg>

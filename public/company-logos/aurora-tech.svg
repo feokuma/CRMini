@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-labelledby="title">
+  <title>Símbolo Aurora Tech</title>
+  <rect width="120" height="120" rx="30" fill="#eef7f1"/>
+  <path d="m60 12 12 36 36 12-36 12-12 36-12-36-36-12 36-12 12-36Z" fill="#398653"/>
+  <circle cx="96" cy="26" r="8" fill="#a9d6b8"/>
+</svg>

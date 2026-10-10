@@ -1,0 +1,27 @@
+"use client";
+
+import Link from "next/link";
+import Image from "next/image";
+import { useEffect, useState } from "react";
+
+type Client = { id: string; company_name: string; trade_name?: string; industry?: string; phone?: string; email?: string; city?: string; logo_path?: string; contacts: { full_name: string; email?: string; is_primary: boolean }[] };
+
+export default function ClientsView() {
+  const [clients, setClients] = useState<Client[]>([]);
+  const [query, setQuery] = useState("");
+  const [error, setError] = useState("");
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetch(`/api/clients${query ? `?q=${encodeURIComponent(query)}` : ""}`)
+        .then(async (response) => { const data = await response.json(); if (!response.ok) throw new Error(data.error); setClients(data); setError(""); })
+        .catch((reason: Error) => setError(reason.message));
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  return <main className="records-page"><header className="records-header"><div><p className="eyebrow">RELACIONAMENTO</p><h1>Clientes</h1><p className="subheading">Empresas e pessoas de contato em um só lugar.</p></div><Link className="primary-button" href="/clientes/novo">＋ Novo cliente</Link></header>
+    <div className="records-toolbar"><input aria-label="Buscar clientes" placeholder="Buscar empresa ou contato..." value={query} onChange={(event) => setQuery(event.target.value)} /><span>{clients.length} cliente(s)</span></div>
+    {error && <p className="form-error">{error}</p>}
+    {clients.length === 0 && !error ? <div className="empty-state"><span>◎</span><h2>Nenhum cliente cadastrado</h2><p>Comece adicionando uma empresa e seus contatos.</p><Link className="primary-button" href="/clientes/novo">Cadastrar primeiro cliente</Link></div> : <div className="client-list">{clients.map((client) => { const main = client.contacts?.find((contact) => contact.is_primary) || client.contacts?.[0]; return <article className="client-row" key={client.id}><div className="company-logo">{client.logo_path ? <Image src={client.logo_path} alt={`Logo ${client.company_name}`} width={56} height={56} unoptimized /> : client.company_name.slice(0, 2).toUpperCase()}</div><div className="company-info"><b>{client.company_name}</b><small>Nome fantasia: {client.trade_name || "—"}</small></div><div className="company-meta"><span><b>Telefone</b>{client.phone || "—"}</span><span><b>Segmento</b>{client.industry || "—"}</span></div><div className="company-contact"><b>{main?.full_name || "Sem contato"}</b><small>{main?.email || client.email || "Nenhum e-mail"}</small></div><Link className="text-link" href={`/clientes/${client.id}`}>Ver detalhes →</Link></article>; })}</div>}
+  </main>;
+}

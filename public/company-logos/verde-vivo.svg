@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-labelledby="title">
+  <title>Símbolo Verde Vivo</title>
+  <rect width="120" height="120" rx="30" fill="#f1f6e8"/>
+  <path d="M94 20C59 19 28 37 26 67c-1 20 12 34 29 32 29-3 43-39 39-79Z" fill="#6d9c46"/>
+  <path d="M28 98c15-27 34-45 61-67" fill="none" stroke="#315e39" stroke-linecap="round" stroke-width="7"/>
+  <path d="M53 67c-1-13-9-21-21-24M72 50c11 1 19 7 24 17" fill="none" stroke="#d8e8bd" stroke-linecap="round" stroke-width="5"/>
+</svg>
