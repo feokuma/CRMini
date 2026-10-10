@@ -57,3 +57,18 @@ main.records-page .company-logo img{object-fit:contain;border-radius:12px}
 @media(max-width:900px){.opportunity-filters{grid-template-columns:minmax(0,1fr) minmax(170px,220px)}.opportunity-filters>input{grid-column:1/-1}}
 @media(max-width:600px){.opportunity-filters{grid-template-columns:1fr}.opportunity-filters>input,.opportunity-filters label,.opportunity-filters .contact-count{grid-column:1}.opportunity-table{overflow:visible;border:0;background:transparent}.opportunity-table-header{display:none}.opportunity-table-row{min-width:0;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:14px;margin-bottom:10px;border:1px solid #e6e9e5;border-radius:7px;background:#fff}.opportunity-table-row>[role=cell],.opportunity-table-row>.opportunity-status{display:grid;gap:4px;align-content:start}.opportunity-table-row>[role=cell]::before,.opportunity-table-row>.opportunity-status::before{content:attr(data-label);color:#858b84;font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}.opportunity-table-row .opportunity-name{grid-column:1/-1;display:flex}.opportunity-table-row .opportunity-name::before{display:none}.opportunity-status select{font-size:10px}}
 @media(min-width:901px){.metric-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}.metric-card{color:inherit;text-decoration:none;min-width:0}.metric-card:hover{border-top-color:var(--accent);background:#fcfdfc}.metric-currency{font-size:16px;line-height:1.5;overflow-wrap:anywhere}
+/* Consistência dos campos de filtro dentro de labels (ex.: data nas tarefas). */
+.contact-filters label input{height:38px;min-width:0;width:100%;padding:0 10px;border:1px solid #dfe4dd;border-radius:4px;background:#fff;color:#303630;font:12px 'DM Sans',sans-serif}
+.contact-filters label input:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3px #3986531c}
+.task-status{display:flex;justify-content:flex-end;min-width:0}
+.task-status select{height:36px;max-width:132px;min-width:112px;padding:0 9px;border:1px solid #dfe4dd;border-radius:4px;background:#fff;color:#303630;font:12px 'DM Sans',sans-serif;cursor:pointer}
+.task-status select:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3px #3986531c}
+.task-list-header{display:grid;grid-template-columns:44px minmax(150px,1.1fr) minmax(155px,1fr) minmax(120px,.7fr) minmax(112px,132px);gap:14px;align-items:center;padding:10px 17px;background:#f5f7f4;border:1px solid var(--line);border-bottom:0;border-radius:7px 7px 0 0;color:#777;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.35px}
+.task-list-header span:first-child{grid-column:2}
+.task-list-header span:last-child{text-align:center}
+.task-list-section .contact-list{border-radius:0 0 7px 7px}
+.task-row{grid-template-columns:44px minmax(150px,1.1fr) minmax(155px,1fr) minmax(120px,.7fr) minmax(112px,132px)}
+.task-date{font-size:11px;color:#666;white-space:nowrap}
+@media(max-width:600px){.task-status{grid-column:2;grid-row:3;justify-content:flex-start}.task-status select{max-width:100%}}
+@media(max-width:900px){.task-row{grid-template-columns:42px minmax(120px,1.1fr) minmax(130px,1fr) minmax(112px,.8fr) 120px;gap:11px}.task-list-header{grid-template-columns:42px minmax(120px,1.1fr) minmax(130px,1fr) minmax(112px,.8fr) 120px;gap:11px}}
+@media(max-width:600px){.task-list-header{display:none}.task-list-section .contact-list{border-radius:7px}.task-row{grid-template-columns:38px minmax(0,1fr);padding:13px;gap:9px}.task-row .contact-list-avatar{grid-column:1;grid-row:1}.task-row .contact-list-person{grid-column:2;grid-row:1}.task-row .contact-list-company{grid-column:2;grid-row:2}.task-row .task-date{grid-column:2;grid-row:3}.task-status{grid-column:2;grid-row:4;justify-content:flex-start}}
