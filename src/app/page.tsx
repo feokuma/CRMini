@@ -1,19 +1,22 @@
 import Link from "next/link";
+import { pool } from "@/lib/db";
+import { getRecentOpportunities, type RecentOpportunity } from "@/lib/recent-opportunities.mjs";
+import { getDashboardMetrics } from "@/lib/dashboard-metrics.mjs";
+import { getDashboardDate, getGreeting } from "@/lib/greeting.mjs";
 
-const metrics = [
-  { label: "Contatos", value: "128", change: "+12 este mês", icon: "◎" },
-  { label: "Oportunidades", value: "24", change: "8 em andamento", icon: "↗" },
-  { label: "Conversão", value: "32%", change: "+4% neste mês", icon: "◌" },
-];
+const avatarColors = ["peach", "blue", "green", "lilac"];
 
-const leads = [
-  { name: "Mariana Costa", company: "Estúdio Aurora", initials: "MC", color: "peach", stage: "Qualificação", value: "R$ 4.800", date: "Hoje" },
-  { name: "Rafael Mendes", company: "Norte & Sul", initials: "RM", color: "blue", stage: "Proposta enviada", value: "R$ 8.200", date: "Ontem" },
-  { name: "Luiza Ferreira", company: "Casa Botânica", initials: "LF", color: "green", stage: "Novo contato", value: "R$ 2.400", date: "12 jun" },
-  { name: "Pedro Almeida", company: "Ponto Criativo", initials: "PA", color: "lilac", stage: "Negociação", value: "R$ 6.100", date: "11 jun" },
-];
-
-export default function Home() {
+export default async function Home() {
+  let opportunities: RecentOpportunity[] = [];
+  let stats = { contactsCount: 0, opportunitiesCount: 0, openOpportunitiesCount: 0, conversionRate: 0, openValueByCurrency: {} as Record<string, string | number> };
+  try {
+    [opportunities, stats] = await Promise.all([
+      getRecentOpportunities((sql) => pool.query(sql)),
+      getDashboardMetrics((sql) => pool.query(sql)),
+    ]);
+  } catch {
+    // A página permanece acessível se o banco estiver temporariamente indisponível.
+  }
   return (
     <main className="app-shell">
       <aside className="sidebar">
@@ -27,16 +30,21 @@ export default function Home() {
           <Link className="nav-item" href="/oportunidades"><span>◈</span> Oportunidades</Link>
           <a className="nav-item" href="#tarefas"><span>✓</span> Tarefas</a>
         </nav>
-        <div className="sidebar-bottom"><div className="help-card"><span className="help-icon">✦</span><b>Vamos começar?</b><p>Organize seus contatos e acompanhe suas vendas em um só lugar.</p><a href="#contatos">Adicionar contato <span>→</span></a></div><div className="profile"><div className="profile-avatar">AF</div><div><b>Alex Ferreira</b><small>Administrador</small></div><span className="chevron">···</span></div></div>
+        <div className="sidebar-bottom"><div className="help-card"><span className="help-icon">✦</span><b>Vamos começar?</b><p>Organize seus contatos e acompanhe suas vendas em um só lugar.</p><a href="#contatos">Adicionar contato <span>→</span></a></div><div className="profile"><div className="profile-avatar">D</div><div><b>Djardi</b><small>Administrador</small></div><span className="chevron">···</span></div></div>
       </aside>
 
       <section className="main-area" id="inicio">
         <header className="topbar"><div className="breadcrumb">Meu espaço <span>/</span> <b>Visão geral</b></div><div className="top-actions"><button className="icon-button" aria-label="Ajuda">?</button><button className="icon-button notification" aria-label="Notificações">♧</button><div className="top-avatar">AF</div></div></header>
         <div className="content">
-          <div className="welcome-row"><div><p className="eyebrow">QUARTA-FEIRA, 18 DE JUNHO</p><h1>Bom dia, Alex <span>✳</span></h1><p className="subheading">Aqui está o resumo do que acontece no seu espaço.</p></div><button className="primary-button"><span>＋</span> Novo contato</button></div>
-          <div className="metric-grid">{metrics.map((metric) => <article className="metric-card" key={metric.label}><div className="metric-top"><span>{metric.label}</span><span className="metric-icon">{metric.icon}</span></div><div className="metric-value">{metric.value}</div><div className="metric-change"><span>↗</span> {metric.change}</div></article>)}</div>
-          <div className="section-heading"><div><h2>Oportunidades recentes</h2><p>Acompanhe seus contatos em andamento.</p></div><a className="text-link" href="#oportunidades">Ver todas <span>→</span></a></div>
-          <section className="table-card" id="oportunidades"><div className="table-toolbar"><div className="search-box"><span>⌕</span><input aria-label="Buscar oportunidades" placeholder="Buscar oportunidade..." /></div><button className="filter-button">☷ <span>Filtros</span></button></div><div className="table-scroll"><table><thead><tr><th>CONTATO</th><th>ETAPA</th><th>VALOR</th><th>ATUALIZADO</th><th></th></tr></thead><tbody>{leads.map((lead) => <tr key={lead.name}><td><div className="contact-cell"><span className={`contact-avatar ${lead.color}`}>{lead.initials}</span><span><b>{lead.name}</b><small>{lead.company}</small></span></div></td><td><span className={`stage stage-${lead.color}`}><i />{lead.stage}</span></td><td className="amount">{lead.value}</td><td className="date">{lead.date}</td><td className="row-more">···</td></tr>)}</tbody></table></div><div className="table-footer"><span>Mostrando <b>4</b> de <b>24</b> oportunidades</span><div><button disabled aria-label="Página anterior">←</button><button aria-label="Próxima página">→</button></div></div></section>
+          <div className="welcome-row"><div><p className="eyebrow">{getDashboardDate()}</p><h1>{getGreeting()} <span>✳</span></h1><p className="subheading">Aqui está o resumo do que acontece no seu espaço.</p></div><button className="primary-button"><span>＋</span> Novo contato</button></div>
+          <div className="metric-grid">
+            <Link className="metric-card" href="/contatos"><div className="metric-top"><span>Contatos</span><span className="metric-icon">◎</span></div><div className="metric-value">{stats.contactsCount}</div><div className="metric-change">Ver contatos →</div></Link>
+            <Link className="metric-card" href="/oportunidades"><div className="metric-top"><span>Oportunidades</span><span className="metric-icon">↗</span></div><div className="metric-value">{stats.opportunitiesCount}</div><div className="metric-change">{stats.openOpportunitiesCount} em aberto</div></Link>
+            <Link className="metric-card" href="/oportunidades"><div className="metric-top"><span>Conversão</span><span className="metric-icon">◌</span></div><div className="metric-value">{stats.conversionRate}%</div><div className="metric-change">Ganhos sobre oportunidades concluídas</div></Link>
+            <Link className="metric-card" href="/oportunidades"><div className="metric-top"><span>Valor em aberto</span><span className="metric-icon">R$</span></div><div className="metric-value metric-currency">{Object.entries(stats.openValueByCurrency).length ? Object.entries(stats.openValueByCurrency).map(([currency, value]) => `${currency} ${Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`).join(" · ") : "—"}</div><div className="metric-change">Total por moeda, sem converter</div></Link>
+          </div>
+          <div className="section-heading"><div><h2>Oportunidades recentes</h2><p>Acompanhe seus negócios mais recentes.</p></div><Link className="text-link" href="/oportunidades">Ver todas <span>→</span></Link></div>
+          <section className="table-card" id="oportunidades"><div className="table-scroll"><table><thead><tr><th>OPORTUNIDADE</th><th>ETAPA</th><th>VALOR</th><th>ATUALIZADO</th></tr></thead><tbody>{opportunities.map((opportunity, index) => <tr key={opportunity.id}><td><div className="contact-cell"><span className={`contact-avatar ${avatarColors[index % avatarColors.length]}`}>{opportunity.contact_name.trim().slice(0, 2).toUpperCase()}</span><span><b>{opportunity.name}</b><small>{opportunity.company_name} · {opportunity.contact_name}</small></span></div></td><td><span className={`stage stage-${avatarColors[index % avatarColors.length]}`}><i />{opportunity.status}</span></td><td className="amount">{opportunity.value == null ? "—" : `${opportunity.currency} ${Number(opportunity.value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}</td><td className="date">{new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium" }).format(new Date(opportunity.updated_at))}</td></tr>)}</tbody></table></div><div className="table-footer">{opportunities.length ? <>Mostrando <b>{opportunities.length}</b> oportunidades recentes</> : "Nenhuma oportunidade cadastrada ainda."}<Link className="text-link" href="/oportunidades/nova">＋ Nova oportunidade</Link></div></section>
           <footer className="page-footer">Feito para relações que fazem sentido <span>✳</span></footer>
         </div>
       </section>
