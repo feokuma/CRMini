@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { formatBrazilDate } from "@/lib/project-time.mjs";
 import { CLIENT_SEGMENTS } from "@/lib/segments";
 
 type Contact = {
@@ -62,7 +63,7 @@ export default function ContactsView() {
           <div className="contact-list-avatar">{contact.full_name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase()}</div>
           <div className="contact-list-person"><div className="contact-name-line"><b>{contact.full_name}</b>{contact.is_primary && <span className="primary-badge">Principal</span>}</div><small>{contact.job_title || "Cargo não informado"}</small>{contact.email ? <a href={`mailto:${contact.email}`}>{contact.email}</a> : <span>E-mail não informado</span>}</div>
           <div className="contact-list-company">{contact.logo_path ? <Image src={contact.logo_path} alt="" width={30} height={30} unoptimized /> : <span className="company-mini-mark">{contact.company_name.slice(0, 1)}</span>}<span><Link href={`/clientes/${contact.client_id}`}>{contact.trade_name || contact.company_name}</Link><small>{contact.industry || "Segmento não informado"}</small></span></div>
-          <div className="contact-list-details"><span><b>Telefone</b>{contact.mobile || contact.phone || "—"}</span><span><b>Aniversário</b>{contact.birthday ? new Date(`${contact.birthday.slice(0, 10)}T00:00:00`).toLocaleDateString("pt-BR") : "—"}</span></div>
+          <div className="contact-list-details"><span><b>Telefone</b>{contact.mobile || contact.phone || "—"}</span><span><b>Aniversário</b>{formatBrazilDate(contact.birthday)}</span></div>
           {contact.linkedin_url ? <a className="linkedin-link" href={contact.linkedin_url} target="_blank" rel="noreferrer" aria-label={`LinkedIn de ${contact.full_name}`}>in</a> : <span className="linkedin-placeholder" aria-hidden="true">in</span>}
         </article>)}
       </div>}

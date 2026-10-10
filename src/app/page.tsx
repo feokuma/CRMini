@@ -24,7 +24,7 @@ export default function Home() {
           <a className="nav-item active" href="#inicio"><span>⌂</span> Visão geral</a>
           <Link className="nav-item" href="/clientes"><span>♙</span> Clientes <em>128</em></Link>
           <Link className="nav-item" href="/contatos"><span>♧</span> Contatos</Link>
-          <a className="nav-item" href="#oportunidades"><span>◈</span> Oportunidades</a>
+          <Link className="nav-item" href="/oportunidades"><span>◈</span> Oportunidades</Link>
           <a className="nav-item" href="#tarefas"><span>✓</span> Tarefas</a>
         </nav>
         <div className="sidebar-bottom"><div className="help-card"><span className="help-icon">✦</span><b>Vamos começar?</b><p>Organize seus contatos e acompanhe suas vendas em um só lugar.</p><a href="#contatos">Adicionar contato <span>→</span></a></div><div className="profile"><div className="profile-avatar">AF</div><div><b>Alex Ferreira</b><small>Administrador</small></div><span className="chevron">···</span></div></div>

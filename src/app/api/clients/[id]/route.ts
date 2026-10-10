@@ -46,8 +46,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   try {
-    const result = await pool.query("DELETE FROM clients WHERE id=$1", [id]);
+    const result = await pool.query("UPDATE clients SET is_active=FALSE, updated_at=NOW() WHERE id=$1 RETURNING id", [id]);
     if (!result.rowCount) return NextResponse.json({ error: "Cliente não encontrado." }, { status: 404 });
     return new NextResponse(null, { status: 204 });
-  } catch { return NextResponse.json({ error: "Não foi possível excluir o cliente." }, { status: 500 }); }
+  } catch { return NextResponse.json({ error: "Não foi possível desativar o cliente." }, { status: 500 }); }
 }
