@@ -28,4 +28,40 @@ ON CONFLICT (id) DO UPDATE SET
   email=EXCLUDED.email, phone=EXCLUDED.phone, mobile=EXCLUDED.mobile, birthday=EXCLUDED.birthday,
   linkedin_url=EXCLUDED.linkedin_url, notes=EXCLUDED.notes, is_primary=EXCLUDED.is_primary, updated_at=NOW();
 
+INSERT INTO opportunities (
+  id, name, client_id, contact_id, technology, value, currency, service_type, resources,
+  budget, budget_currency, notes, customer_need, offered_solution, project_hours,
+  opened_at, expected_close_at, status, loss_reason
+) VALUES
+  ('dddddddd-dddd-4ddd-8ddd-ddddddddddd1', 'Integração de dados comerciais',
+   '11111111-1111-4111-8111-111111111111', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2',
+   'TypeScript, PostgreSQL', 48000.00, 'BRL', 'Projeto', 'Consultor; desenvolvedor backend; UX Designer',
+   55000.00, 'BRL', 'Exemplo de oportunidade em fase de proposta.',
+   'Consolidar dados hoje distribuídos em sistemas diferentes.',
+   'Implementar integrações e um painel unificado para acompanhamento comercial.',
+   320, CURRENT_DATE - 20, CURRENT_DATE + 25, 'Proposta', NULL),
+  ('dddddddd-dddd-4ddd-8ddd-ddddddddddd2', 'Implantação do novo e-commerce',
+   '22222222-2222-4222-8222-222222222222', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2',
+   'Shopify, APIs REST', 28500.00, 'BRL', 'Implantação', 'Consultor; desenvolvedor; especialista em e-commerce',
+   30000.00, 'BRL', 'Exemplo de oportunidade em desenvolvimento.',
+   'Modernizar a operação digital e facilitar a atualização do catálogo.',
+   'Implantar a plataforma e integrar catálogo, estoque e pedidos.',
+   200, CURRENT_DATE - 12, CURRENT_DATE + 45, 'Desenvolvimento', NULL),
+  ('dddddddd-dddd-4ddd-8ddd-ddddddddddd3', 'Sistema de acompanhamento de obras',
+   '33333333-3333-4333-8333-333333333333', 'cccccccc-cccc-4ccc-8ccc-ccccccccccc1',
+   'Aplicação web', 72000.00, 'USD', 'Projeto', 'Analista de negócios; desenvolvedor; QA',
+   65000.00, 'USD', 'Exemplo de oportunidade perdida para demonstrar o motivo.',
+   'Ter visibilidade centralizada do andamento das obras.',
+   'Desenvolver uma aplicação para acompanhar cronogramas, custos e entregas.',
+   480, CURRENT_DATE - 90, CURRENT_DATE - 30, 'Perdida', 'Prazo')
+ON CONFLICT (id) DO UPDATE SET
+  name=EXCLUDED.name, client_id=EXCLUDED.client_id, contact_id=EXCLUDED.contact_id,
+  technology=EXCLUDED.technology, value=EXCLUDED.value, currency=EXCLUDED.currency,
+  service_type=EXCLUDED.service_type, resources=EXCLUDED.resources, budget=EXCLUDED.budget,
+  budget_currency=EXCLUDED.budget_currency, notes=EXCLUDED.notes,
+  customer_need=EXCLUDED.customer_need, offered_solution=EXCLUDED.offered_solution,
+  project_hours=EXCLUDED.project_hours, opened_at=EXCLUDED.opened_at,
+  expected_close_at=EXCLUDED.expected_close_at, status=EXCLUDED.status,
+  loss_reason=EXCLUDED.loss_reason, updated_at=NOW();
+
 COMMIT;
