@@ -1,24 +1,79 @@
-# Reply CRM — CRM inicial
+# Reply CRM
 
-Aplicação Next.js para organizar empresas clientes e suas pessoas de contato. O cadastro é persistido em PostgreSQL.
+Aplicação web de CRM para organizar empresas clientes, contatos, oportunidades e tarefas. Os dados são persistidos em PostgreSQL; a interface permite acompanhar informações e atividades comerciais em um só lugar.
 
-## Começar
+## Tecnologias
 
-Requisitos: Node.js 20.9 ou superior e Docker com Compose.
+- Next.js 15 e React 19
+- TypeScript 5
+- PostgreSQL 16, acessado pela biblioteca `pg`
+- Docker Compose para executar o banco localmente
+- ESLint 9 para análise estática
+- Node.js Test Runner para os testes automatizados
+
+## Requisitos
+
+- Node.js 20.9 ou superior e npm
+- Docker com Docker Compose
+
+## Configuração e execução local
+
+Na raiz do repositório, instale as dependências e configure a conexão com o banco:
 
 ```bash
 npm install
+cp .env.example .env.local
+```
+
+O `.env.example` já contém a URL adequada para o PostgreSQL local definido no Compose. Inicie o banco e a aplicação:
+
+```bash
 npm run db:up
 npm run dev
 ```
 
-Copie `.env.example` para `.env.local` antes de iniciar. O schema `database/init.sql` é aplicado quando o volume do banco é criado pela primeira vez. Execute `npm run db:seed` para criar três empresas de exemplo e seus contatos. O seed pode ser executado novamente sem duplicar esses registros. Para apagar o banco e recriar as tabelas: `docker compose down -v` e `docker compose up -d`.
+Acesse [http://localhost:3000](http://localhost:3000). Para encerrar o banco, use `npm run db:down`.
 
-Abra [http://localhost:3000](http://localhost:3000). Para validar a produção, use `npm run build`.
+## Banco de dados e migrations
 
-Para bancos já inicializados, execute `database/migrations/001_opportunities.sql` uma única vez antes de usar a tela de oportunidades. Clientes não são excluídos pela aplicação: a ação disponível os desativa e preserva o histórico. A duração de projeto é persistida em horas (8 por dia, 40 por semana e 160 por mês). Para os testes unitários sem dependências externas, execute `node --test tests/*.test.mjs`.
+O serviço PostgreSQL 16 do Docker Compose é publicado na porta `5432`. Na primeira inicialização de um volume, o Docker aplica automaticamente `database/init.sql`, que cria o schema. Para inserir os dados de demonstração (três empresas e seus contatos), execute:
 
-Datas e horários seguem o padrão brasileiro (`dd/mm/aaaa` e `dd/mm/aaaa, hh:mm`) na interface, no fuso `America/Sao_Paulo`. Instantes (colunas `TIMESTAMPTZ`) são persistidos como UTC pelo PostgreSQL. Campos que representam somente uma data (colunas `DATE`, como aniversário e abertura) permanecem datas civis `aaaa-mm-dd` no banco: não representam um instante e não devem ser convertidos entre fusos, para evitar deslocamento de dia.
+```bash
+npm run db:seed
+```
+
+O seed pode ser executado novamente sem duplicar esses registros.
+
+As migrations não são executadas automaticamente. Em bancos já inicializados que ainda não possuem oportunidades e tarefas, aplique os arquivos na ordem abaixo, uma única vez cada, com o serviço `postgres` em execução:
+
+```bash
+docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U reply_crm -d reply_crm -f - < database/migrations/001_opportunities.sql
+docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U reply_crm -d reply_crm -f - < database/migrations/002_tasks.sql
+```
+
+Não execute migrations em bancos que já as receberam. Para descartar completamente o banco local e recriá-lo do zero, remova também o volume — isso apaga todos os dados:
+
+```bash
+docker compose down -v
+npm run db:up
+```
+
+## Testes e validação
+
+Execute os testes unitários (não precisam de banco ou serviços externos):
+
+```bash
+node --test tests/*.test.mjs
+```
+
+Para verificar o lint e gerar a versão de produção:
+
+```bash
+npm run lint
+npm run build
+```
+
+Depois do build, a versão de produção pode ser iniciada com `npm run start`.
 
 ## Estrutura
 
@@ -26,11 +81,12 @@ Datas e horários seguem o padrão brasileiro (`dd/mm/aaaa` e `dd/mm/aaaa, hh:mm
 - `src/app/clientes`: lista, cadastro e edição de clientes e contatos.
 - `src/app/api/clients`: endpoints de cadastro, consulta, edição e exclusão.
 - `src/app/oportunidades`: cadastro e acompanhamento de oportunidades.
-- `database/migrations/001_opportunities.sql`: migração manual para bancos existentes.
-- `database/init.sql`: schema PostgreSQL.
+- `src/app/tarefas`: tarefas.
+- `database/init.sql`: schema PostgreSQL para bancos novos.
+- `database/migrations`: migrations manuais para bancos existentes.
 - `database/seed.sql`: clientes e contatos de demonstração.
 - `tmp/assets`: armazenamento provisório dos logos enviados (não versionado).
 - `src/app/globals.css`: estilos responsivos da aplicação.
 - `src/app/layout.tsx`: layout raiz e metadados.
 
-Os contatos têm data de aniversário opcional e perfil do LinkedIn. Logos aceitam PNG, JPG ou WebP até 2 MB. `tmp/assets` é um armazenamento provisório, não adequado para implantação efêmera ou produção.
+Clientes não são excluídos pela aplicação: a ação disponível os desativa e preserva o histórico. A duração de projeto é persistida em horas (8 por dia, 40 por semana e 160 por mês). Datas e horários seguem o padrão brasileiro na interface e o fuso `America/Sao_Paulo`; instantes são armazenados em UTC, enquanto campos `DATE` permanecem datas civis sem conversão de fuso. Logos aceitam PNG, JPG ou WebP até 2 MB. `tmp/assets` é um armazenamento provisório, não adequado para implantação efêmera ou produção.
