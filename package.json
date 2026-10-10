@@ -1,0 +1,29 @@
+{
+  "name": "crm-inicial",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:seed": "docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U reply_crm -d reply_crm -f - < database/seed.sql"
+  },
+  "dependencies": {
+    "@types/pg": "^8.23.1",
+    "next": "^15.3.0",
+    "pg": "^8.23.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "^15.3.0",
+    "typescript": "^5.0.0"
+  }
+}

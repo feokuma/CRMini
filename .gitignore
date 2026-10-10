@@ -1,0 +1,10 @@
+node_modules/
+.next/
+.next-dev/
+out/
+build/
+*.tsbuildinfo
+.env*
+!.env.example
+tmp/assets/*
+!tmp/assets/.gitkeep
