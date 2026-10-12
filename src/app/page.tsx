@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { pool } from "@/lib/db";
-import { getRecentOpportunities, type RecentOpportunity } from "@/lib/recent-opportunities.mjs";
-import { getDashboardMetrics } from "@/lib/dashboard-metrics.mjs";
+import { getRecentOpportunities, type RecentOpportunity } from "@/lib/recent-opportunities";
+import { getDashboardMetrics } from "@/lib/dashboard-metrics";
 import { getDashboardDate, getGreeting } from "@/lib/greeting";
 
 const avatarColors = ["peach", "blue", "green", "lilac"];

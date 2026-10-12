@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { getDashboardMetrics } from "./dashboard-metrics.mjs";
+import { getDashboardMetrics } from "./dashboard-metrics";
 import { getGreeting } from "./greeting";
 import { toProjectHours, formatBrazilDate, formatBrazilDateTime } from "./project-time";
-import { getRecentOpportunities } from "./recent-opportunities.mjs";
+import { getRecentOpportunities } from "./recent-opportunities";
 import { saoPauloDayRange } from "./task-date";
 import { validateTask } from "./task-validation";
 
