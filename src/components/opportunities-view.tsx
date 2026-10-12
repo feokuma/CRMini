@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
-import { formatBrazilDate, getBrazilDateString, toProjectHours } from "@/lib/project-time.mjs";
+import { formatBrazilDate, getBrazilDateString, toProjectHours } from "@/lib/project-time";
 
 type Client = { id: string; company_name: string; is_active: boolean; contacts: { id: string; full_name: string }[] };
 type Opportunity = { id: string; client_id: string; name: string; company_name: string; contact_name: string; status: string; value: string | null; currency: string; opened_at: string; expected_close_at: string | null; service_type?: string; technology?: string };

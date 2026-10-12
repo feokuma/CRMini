@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { formatBrazilDate } from "@/lib/project-time.mjs";
+import { formatBrazilDate } from "@/lib/project-time";
 import { CLIENT_SEGMENTS } from "@/lib/segments";
 
 type Contact = {
