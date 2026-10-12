@@ -18,21 +18,7 @@ export default async function Home() {
     // A página permanece acessível se o banco estiver temporariamente indisponível.
   }
   return (
-    <main className="app-shell">
-      <aside className="sidebar">
-        <a className="brand" href="#inicio"><span className="brand-mark">r</span><span>reply<span className="brand-dot"> crm</span></span></a>
-        <div className="workspace"><span className="workspace-icon">✳</span><span><b>Meu espaço</b><small>Plano inicial</small></span><span className="chevron">⌄</span></div>
-        <p className="nav-label">MENU</p>
-        <nav aria-label="Navegação principal">
-          <a className="nav-item active" href="#inicio"><span>⌂</span> Visão geral</a>
-          <Link className="nav-item" href="/clientes"><span>♙</span> Clientes <em>128</em></Link>
-          <Link className="nav-item" href="/contatos"><span>♧</span> Contatos</Link>
-          <Link className="nav-item" href="/oportunidades"><span>◈</span> Oportunidades</Link>
-          <Link className="nav-item" href="/tarefas"><span>✓</span> Tarefas</Link>
-        </nav>
-        <div className="sidebar-bottom"><div className="help-card"><span className="help-icon">✦</span><b>Vamos começar?</b><p>Organize seus contatos e acompanhe suas vendas em um só lugar.</p><a href="#contatos">Adicionar contato <span>→</span></a></div><div className="profile"><div className="profile-avatar">D</div><div><b>Djardi</b><small>Administrador</small></div><span className="chevron">···</span></div></div>
-      </aside>
-
+    <>
       <section className="main-area" id="inicio">
         <header className="topbar"><div className="breadcrumb">Meu espaço <span>/</span> <b>Visão geral</b></div><div className="top-actions"><button className="icon-button" aria-label="Ajuda">?</button><button className="icon-button notification" aria-label="Notificações">♧</button><div className="top-avatar">AF</div></div></header>
         <div className="content">
@@ -48,6 +34,6 @@ export default async function Home() {
           <footer className="page-footer">Feito para relações que fazem sentido <span>✳</span></footer>
         </div>
       </section>
-    </main>
+    </>
   );
 }
