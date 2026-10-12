@@ -1,6 +1,6 @@
 ---
 name: commits-gitmoji
-description: Padroniza a criação de mensagens de commit usando Gitmoji e português.
+description: Padroniza mensagens de commit com Gitmoji e português brasileiro.
 ---
 
 # Commits com Gitmoji em português
