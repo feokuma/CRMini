@@ -1,3 +1,5 @@
+type GreetingPeriod = "morning" | "afternoon" | "evening";
+
 const greetings = {
   morning: [
     "Bom dia", "Que bom ter você por aqui", "Um ótimo começo de dia", "Comece o dia com boas ideias",
@@ -14,26 +16,41 @@ const greetings = {
     "Desacelere e aproveite sua noite", "Uma noite de paz e descanso", "A paz de Cristo", "Que Deus abençoe sua noite",
     "Que a paz de Deus esteja com você", "Que o Senhor guarde sua noite", "Boa noite, na paz do Senhor", "Que Deus lhe conceda uma noite serena",
   ],
-};
+} as const satisfies Record<GreetingPeriod, readonly string[]>;
 
-export function getGreeting(date = new Date(), name = "Djardi") {
+export function getGreeting(date: Date = new Date(), name = "Djardi"): string {
   const parts = new Intl.DateTimeFormat("en-US", {
     hour: "numeric", hourCycle: "h23", timeZone: "America/Sao_Paulo",
     year: "numeric", month: "numeric", day: "numeric",
-  }).formatToParts(date);
-  const get = (type) => Number(parts.find((part) => part.type === type).value);
-  const hour = get("hour");
-  const period = hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
-  const dayKey = get("year") * 10000 + get("month") * 100 + get("day");
+  })
+    .formatToParts(date);
+  const partsByType = Object.fromEntries(
+    parts.map(({ type, value }) => [type, value]),
+  );
+  const getPart = (type: string) => Number(partsByType[type]);
+  const hour = getPart("hour");
+  const period: GreetingPeriod = hour < 12
+    ? "morning"
+    : hour < 18
+      ? "afternoon"
+      : "evening";
+  const dayKey = getPart("year") * 10000
+    + getPart("month") * 100
+    + getPart("day");
   const options = greetings[period];
+
   return `${options[dayKey % options.length]}, ${name}`;
 }
 
-export function getDashboardDate(date = new Date()) {
-  return new Intl.DateTimeFormat("pt-BR", {
+export function getDashboardDate(date: Date = new Date()): string {
+  const formattedDate = new Intl.DateTimeFormat("pt-BR", {
     weekday: "long",
     day: "numeric",
     month: "long",
     timeZone: "America/Sao_Paulo",
-  }).format(date).toLocaleUpperCase("pt-BR");
+  })
+    .format(date);
+
+  return formattedDate
+    .toLocaleUpperCase("pt-BR");
 }
