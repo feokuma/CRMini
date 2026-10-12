@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createTask, listTasks } from "@/lib/repositories/tasks";
-import { saoPauloDayRange } from "@/lib/task-date.mjs";
-import { validateTask } from "@/lib/task-validation.mjs";
+import { saoPauloDayRange } from "@/lib/task-date";
+import { validateTask } from "@/lib/task-validation";
 
 export const runtime = "nodejs";
 

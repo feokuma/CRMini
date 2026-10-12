@@ -3,8 +3,8 @@ import { getDashboardMetrics } from "./dashboard-metrics.mjs";
 import { getGreeting } from "./greeting.mjs";
 import { toProjectHours, formatBrazilDate, formatBrazilDateTime } from "./project-time.mjs";
 import { getRecentOpportunities } from "./recent-opportunities.mjs";
-import { saoPauloDayRange } from "./task-date.mjs";
-import { validateTask } from "./task-validation.mjs";
+import { saoPauloDayRange } from "./task-date";
+import { validateTask } from "./task-validation";
 
 describe("regras de tarefas", () => {
   const validTask = {
