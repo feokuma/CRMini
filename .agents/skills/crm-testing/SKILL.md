@@ -17,6 +17,7 @@ Inspecione `package.json` e os testes existentes antes de escolher ferramentas. 
 - Crie ou atualize testes automatizados que verifiquem o comportamento observável junto com cada mudança funcional. Não encerre a tarefa com comportamento alterado sem cobertura correspondente.
 - Sempre que uma regra de negócio for adicionada ou alterada, crie ou atualize obrigatoriamente testes unitários com Vitest, junto ao módulo correspondente (por exemplo, `src/lib/nome-da-regra.test.ts`). Faça isso na mesma alteração do código. Testes Node.js existentes não substituem essa cobertura Vitest; atualize-os também quando necessário para manter a suíte legada coerente.
 - Cubra o comportamento normal, entradas inválidas e casos-limite relevantes da regra, incluindo resultados de sucesso e falha. Prefira testar a lógica pela interface pública do módulo.
+- Em testes que verificam formatos com regex, use constantes nomeadas pelo conteúdo que o padrão aceita ou filtra; mantenha as chamadas encadeadas em linhas separadas para facilitar leitura.
 - Para defeitos, inclua teste de regressão que reproduza o problema; confirme que falha antes da correção quando possível.
 - Se não for possível testar por limitação concreta, não alegue cobertura nem conclusão plena: explique o bloqueio e peça decisão ao usuário antes de entregar trabalho parcial.
 

@@ -17,6 +17,8 @@ Use ao criar ou alterar handlers em `src/app/api`.
 
 - Inspecione handlers semelhantes e seus consumidores antes de alterar contrato, nomes de campos ou códigos HTTP.
 - Trate JSON inválido e corpo com formato inesperado sem deixar exceção não capturada. Valide tipos, comprimentos, formatos e limites no servidor; use lista explícita de campos aceitos.
+- Ao validar formatos, declare regex em constantes com nomes que indiquem o formato/conteúdo validado (por exemplo, `isoTimestampPattern`); não use regex literal inline em condicionais.
+- Para chamadas encadeadas ou estilo funcional, quebre a linha a cada chamada de função/método para deixar cada transformação legível.
 - Use `400` para entrada inválida, `404` para recurso inexistente, `201` para criação e respostas de erro coerentes com os handlers existentes. Não exponha stack traces.
 - Não assuma autenticação/autorização existente: verifique o contexto do projeto. Se adicionar dados sensíveis ou operações privilegiadas sem controles necessários, sinalize a lacuna em vez de sugerir proteção inexistente.
 - Use transações para operações que gravem múltiplos registros; sempre faça rollback em falha e libere conexões em `finally`.

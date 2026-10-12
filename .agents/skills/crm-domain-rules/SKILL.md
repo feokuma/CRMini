@@ -21,6 +21,8 @@ Use ao alterar fluxos, telas, endpoints ou dados de clientes e contatos.
 - Preserve associações: contatos criados junto com um cliente devem receber o ID do cliente correto; mudanças em relações devem tratar transações e erros sem deixar dados parciais.
 - Trate valores opcionais de forma consistente (`null`/vazio) e não descarte dados existentes inadvertidamente em atualizações parciais.
 - Ao introduzir uma nova regra, explicite seu comportamento para registros existentes e atualize schema/validação e testes relevantes.
+- Em regras de validação baseadas em regex, use constantes nomeadas pelo padrão validado (por exemplo, `taxIdPattern` ou `isoTimestampPattern`), não regex inline.
+- Formate chamadas encadeadas/estilo funcional com uma chamada por linha, seguindo `src/lib/task-date.ts`.
 - Não altere a semântica de exclusão em cascata nem introduza restrições de unicidade sem confirmar os requisitos e avaliar dados existentes.
 
 ## Verificação

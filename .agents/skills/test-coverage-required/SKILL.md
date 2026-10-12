@@ -15,6 +15,7 @@ Use em toda implementação, correção, refatoração que altere comportamento 
 - Para componentes React, prefira testes Vitest + React Testing Library em arquivos próximos ao componente ou página. Preserve e atualize testes existentes em outros runners quando continuarem relevantes.
 - Para correções de defeitos, adicione um teste de regressão que falhe antes da correção e passe depois dela, sempre que viável.
 - Cubra regras de negócio e casos-limite importantes; priorize comportamento observável e evite testes frágeis presos a detalhes internos.
+- Em código de validação coberto pelos testes, mantenha padrões regex em constantes nomeadas pelo conteúdo validado/filtrado e formate chamadas encadeadas com uma chamada por linha.
 - Se uma alteração afetar API, banco e interface, teste as camadas relevantes e ao menos os fluxos de integração afetados. Isole testes de dependências externas e nunca use dados pessoais reais.
 - Não reduza, remova ou enfraqueça testes existentes para fazer uma implementação passar sem justificativa explícita e validada.
 

@@ -13,6 +13,8 @@ Use ao planejar, implementar ou refatorar código neste projeto.
 - Mantenha funções, módulos e mudanças focados; evite complexidade, camadas, abstrações e configuração sem benefício concreto.
 - Não antecipe requisitos hipotéticos. Uma implementação pequena e explícita costuma ser melhor que uma estrutura genérica prematura.
 - Escreva código conciso, mas não sacrifique legibilidade, tratamento correto de erros ou validação para reduzir linhas.
+- Em implementações com chamadas encadeadas/estilo funcional, coloque cada chamada de função ou método em sua própria linha, usando `task-date.ts` como referência para facilitar leitura e revisão.
+- Declare expressões regulares em constantes com nomes descritivos do conteúdo validado ou filtrado (por exemplo, `isoTimestampPattern`); evite regex inline em validações e filtros.
 
 ## Reutilização sem duplicação
 
