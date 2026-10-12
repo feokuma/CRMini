@@ -1,6 +1,6 @@
 ---
 name: test-coverage-required
-description: Exige testes automatizados para todo comportamento novo ou alterado neste projeto.
+description: Exige testes automatizados para todo comportamento novo ou alterado, incluindo testes Vitest para regras de negócio.
 ---
 
 # Cobertura obrigatória de implementação
@@ -11,6 +11,8 @@ Use em toda implementação, correção, refatoração que altere comportamento 
 
 - Antes de implementar, identifique os comportamentos afetados e os cenários de sucesso, validação e falha relevantes. Transforme-os em testes automatizados reproduzíveis.
 - Escreva ou atualize testes junto com cada alteração funcional. Não considere lint, build, revisão manual ou um teste apenas existente como substitutos para cobertura do comportamento alterado.
+- Sempre que adicionar ou alterar uma regra de negócio, escreva ou atualize testes unitários Vitest na mesma mudança, próximos ao módulo que implementa a regra. Cubra sucesso, validação/falha e limites relevantes. Testes de outro runner não substituem os testes Vitest exigidos para essas regras.
+- Para componentes React, prefira testes Vitest + React Testing Library em arquivos próximos ao componente ou página. Preserve e atualize testes existentes em outros runners quando continuarem relevantes.
 - Para correções de defeitos, adicione um teste de regressão que falhe antes da correção e passe depois dela, sempre que viável.
 - Cubra regras de negócio e casos-limite importantes; priorize comportamento observável e evite testes frágeis presos a detalhes internos.
 - Se uma alteração afetar API, banco e interface, teste as camadas relevantes e ao menos os fluxos de integração afetados. Isole testes de dependências externas e nunca use dados pessoais reais.
@@ -21,7 +23,7 @@ Use em toda implementação, correção, refatoração que altere comportamento 
 1. Inspecione os testes, `package.json` e as convenções do repositório.
 2. Defina critérios de aceitação testáveis para a mudança.
 3. Implemente testes automatizados apropriados e a alteração funcional.
-4. Execute os testes afetados e a suíte relevante; execute também lint/build quando aplicável.
+4. Execute os testes afetados e `npm test`; execute também lint/build quando aplicável.
 5. Informe quais testes foram adicionados e quais comandos foram executados.
 
 ## Quando não houver infraestrutura adequada
@@ -33,4 +35,4 @@ Use em toda implementação, correção, refatoração que altere comportamento 
 
 ## Contexto deste repositório
 
-O `package.json` atualmente declara `lint` e `build`, mas não um runner ou script de testes. Portanto, confirme a infraestrutura disponível antes de executar comandos de teste e proponha a configuração necessária quando apropriado. O skill `crm-testing` contém cenários de domínio úteis; use-o em conjunto com este requisito, que torna a cobertura obrigatória para todas as implementações.
+O projeto usa Vitest + React Testing Library para testes de componentes e Node.js Test Runner para testes de lógica existentes. `npm test` executa as duas suítes, e `npm run test:components` executa os testes Vitest. O skill `crm-testing` contém cenários de domínio úteis e detalha a cobertura específica obrigatória para regras de negócio.

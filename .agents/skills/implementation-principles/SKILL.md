@@ -35,6 +35,8 @@ SOLID é orientação, não checklist: aplique um princípio quando resolver um 
 
 - Inspecione o código vizinho e respeite convenções existentes antes de introduzir novos padrões.
 - Prefira mudanças locais e compatíveis com os contratos existentes; evite refatoração não relacionada ao pedido.
+- Toda alteração funcional exige criar ou atualizar testes automatizados para o comportamento afetado. Isso é obrigatório para funcionalidades, correções, refatorações comportamentais e regras de negócio; não finalize sem cobertura, conforme `test-coverage-required` e `crm-testing`.
+- Execute os testes relevantes antes de concluir e reporte exatamente os comandos e resultados. Lint, build e revisão manual não substituem testes automatizados.
 - Considere legibilidade para a próxima pessoa que manterá o código, incluindo nomes claros e comentários apenas quando explicarem contexto não óbvio.
 - Preserve ou adicione testes automatizados para comportamentos afetados, conforme a skill `test-coverage-required`.
 - Ao final, resuma decisões relevantes e qualquer duplicação ou complexidade mantida intencionalmente.

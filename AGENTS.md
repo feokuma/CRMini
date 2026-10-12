@@ -35,6 +35,7 @@
 
 - O projeto usa testes com o Node.js Test Runner em `tests/*.test.mjs`; execute `node --test tests/*.test.mjs`. Não há atualmente script `npm test` no `package.json`.
 - Toda alteração de comportamento ou regra de negócio deve incluir ou atualizar testes automatizados para sucesso, validação e casos-limite relevantes.
+- Testes automatizados são obrigatórios para toda mudança funcional (incluindo correções e refatorações que alterem comportamento); não finalize sem cobertura correspondente. Lint, build e revisão manual não substituem testes.
 - Quando aplicável, valide também com `npm run lint` e `npm run build`. Relate com precisão quais comandos foram executados e seus resultados.
 - Para funcionalidades que dependam de banco, prefira testes isolados para a lógica de domínio; não assuma que os testes existentes iniciam serviços externos.
 
