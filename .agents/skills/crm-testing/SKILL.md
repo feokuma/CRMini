@@ -9,7 +9,7 @@ Use em toda implementação, correção, refatoração ou mudança de comportame
 
 ## Contexto
 
-Inspecione `package.json` e os testes existentes antes de escolher ferramentas. O projeto usa Vitest e React Testing Library para testes de componentes e Node.js Test Runner para testes de lógica existentes. `npm test` executa ambas as suítes; `npm run test:components` executa Vitest.
+Inspecione `package.json` e os testes existentes antes de escolher ferramentas. O projeto usa Vitest e React Testing Library para testes automatizados. `npm test` executa a suíte completa; `npm run test:components` mantém um alias para Vitest.
 
 ## Regra de cobertura obrigatória
 

@@ -9,7 +9,7 @@ Aplicação web de CRM para organizar empresas clientes, contatos, oportunidades
 - PostgreSQL 16, acessado pela biblioteca `pg`
 - Docker Compose para executar o banco localmente
 - ESLint 9 para análise estática
-- Node.js Test Runner para testes de lógica e Vitest + React Testing Library para componentes React
+- Vitest + React Testing Library para testes automatizados de lógica e componentes React
 
 ## Requisitos
 
@@ -60,13 +60,13 @@ npm run db:up
 
 ## Testes e validação
 
-Execute os testes automatizados (não precisam de banco ou serviços externos). `npm test` roda a suíte Node.js e os testes de componentes em `src/`:
+Execute os testes automatizados (não precisam de banco ou serviços externos) com Vitest:
 
 ```bash
 npm test
 ```
 
-Os testes de componentes ficam junto aos arquivos testados (por exemplo, `src/components/app-sidebar.test.tsx`) e podem ser executados isoladamente com `npm run test:components`.
+Os testes ficam próximos aos módulos em `src/` ou na pasta `tests/`. `npm run test:components` também executa a suíte Vitest completa.
 
 Para verificar o lint e gerar a versão de produção:
 

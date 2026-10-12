@@ -36,4 +36,4 @@ Use em toda implementação, correção, refatoração que altere comportamento 
 
 ## Contexto deste repositório
 
-O projeto usa Vitest + React Testing Library para testes de componentes e Node.js Test Runner para testes de lógica existentes. `npm test` executa as duas suítes, e `npm run test:components` executa os testes Vitest. O skill `crm-testing` contém cenários de domínio úteis e detalha a cobertura específica obrigatória para regras de negócio.
+O projeto usa Vitest + React Testing Library para testes de lógica e componentes. `npm test` executa a suíte completa, e `npm run test:components` mantém um alias para Vitest. O skill `crm-testing` contém cenários de domínio úteis e detalha a cobertura específica obrigatória para regras de negócio.

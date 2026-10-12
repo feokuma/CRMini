@@ -33,7 +33,7 @@
 
 ## Testes e validação
 
-- O projeto usa testes com o Node.js Test Runner em `tests/*.test.mjs`; execute `node --test tests/*.test.mjs`. Não há atualmente script `npm test` no `package.json`.
+- O projeto usa Vitest + React Testing Library; os testes ficam próximos aos módulos em `src/` ou na pasta `tests/`. Execute `npm test` para rodar a suíte completa e `npm run test:components` para executar o alias mantido para Vitest.
 - Toda alteração de comportamento ou regra de negócio deve incluir ou atualizar testes automatizados para sucesso, validação e casos-limite relevantes.
 - Testes automatizados são obrigatórios para toda mudança funcional (incluindo correções e refatorações que alterem comportamento); não finalize sem cobertura correspondente. Lint, build e revisão manual não substituem testes.
 - Quando aplicável, valide também com `npm run lint` e `npm run build`. Relate com precisão quais comandos foram executados e seus resultados.
