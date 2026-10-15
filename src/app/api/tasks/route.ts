@@ -8,11 +8,11 @@ export const runtime = "nodejs";
 export async function GET(request: NextRequest) {
   try {
     const params = request.nextUrl.searchParams;
-    const day = params.get("date") || new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
-    const { start, end } = saoPauloDayRange(day);
+    const day = params.get("date");
+    const range = day ? saoPauloDayRange(day) : null;
     const status = params.get("status");
     if (status && !["Aberto", "Concluído"].includes(status)) return NextResponse.json({ error: "Status inválido." }, { status: 400 });
-    return NextResponse.json(await listTasks(start, end, status));
+    return NextResponse.json(await listTasks(range?.start ?? null, range?.end ?? null, status));
   } catch { return NextResponse.json({ error: "Não foi possível carregar as tarefas." }, { status: 400 }); }
 }
 

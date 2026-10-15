@@ -1,9 +1,9 @@
 import { pool } from "@/lib/db";
 
-export async function listTasks(start: string, end: string, status: string | null) {
+export async function listTasks(start: string | null, end: string | null, status: string | null) {
   const { rows } = await pool.query(`SELECT t.id,t.contact_type,t.subject,t.description,t.scheduled_at,t.status,t.client_id,t.contact_id,c.company_name,p.full_name AS contact_name
     FROM tasks t JOIN clients c ON c.id=t.client_id JOIN contacts p ON p.id=t.contact_id AND p.client_id=t.client_id
-    WHERE t.scheduled_at >= $1::timestamptz AND t.scheduled_at < $2::timestamptz AND ($3::text IS NULL OR t.status=$3) ORDER BY t.scheduled_at`, [start, end, status]);
+    WHERE ($1::timestamptz IS NULL OR (t.scheduled_at >= $1::timestamptz AND t.scheduled_at < $2::timestamptz)) AND ($3::text IS NULL OR t.status=$3) ORDER BY t.scheduled_at`, [start, end, status]);
   return rows;
 }
 
