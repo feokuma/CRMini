@@ -18,6 +18,15 @@ import AppSidebar from "./app-sidebar";
 afterEach(() => cleanup());
 
 describe("Menu lateral", () => {
+  it("exibe a marca Mini CRM mantendo o ícone da marca", () => {
+    render(<AppSidebar />);
+
+    expect(screen.getByRole("link", { name: "Mini CRM" })).toBeInTheDocument();
+    expect(screen.getByText("Mini")).toBeInTheDocument();
+    expect(screen.getByText("CRM")).toBeInTheDocument();
+    expect(screen.getByAltText("Reply CRM")).toHaveAttribute("src", expect.stringContaining("reply-favicon.ico"));
+  });
+
   it("exibe somente os destinos principais da navegação", () => {
     pathname.current = "/";
     render(<AppSidebar />);

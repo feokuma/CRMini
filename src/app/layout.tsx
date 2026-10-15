@@ -5,6 +5,7 @@ import AppSidebar from "@/components/app-sidebar";
 export const metadata: Metadata = {
   title: "Reply CRM",
   description: "Um espaço simples para acompanhar seus clientes e oportunidades.",
+  icons: { icon: "/brand/reply-favicon.ico" },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
