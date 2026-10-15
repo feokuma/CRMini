@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Breadcrumbs from "@/components/breadcrumbs";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
@@ -38,7 +39,7 @@ export default function ClientForm({ id }: { id?: string }) {
     finally { setSaving(false); }
   }
 
-  return <main className="records-page"><div className="form-breadcrumb"><Link href="/clientes">Clientes</Link><span>/</span>{id ? "Editar cliente" : "Novo cliente"}</div><header className="records-header"><div><p className="eyebrow">CADASTRO</p><h1>{id ? "Editar cliente" : "Novo cliente"}</h1><p className="subheading">Cadastre os dados da empresa e seus contatos.</p></div></header>
+  return <main className="records-page"><Breadcrumbs items={[{ label: "Meu espaço", href: "/" }, { label: "Clientes", href: "/clientes" }, { label: id ? "Editar cliente" : "Novo cliente" }]} /><header className="records-header"><div><p className="eyebrow">CADASTRO</p><h1>{id ? "Editar cliente" : "Novo cliente"}</h1><p className="subheading">Cadastre os dados da empresa e seus contatos.</p></div></header>
     <form className="client-form" onSubmit={submit}>
       <section className="form-section"><div className="form-section-heading"><div><h2>Dados da empresa</h2><p>Informações principais do cliente.</p></div></div><div className="logo-upload"><div className="logo-preview">{data.logo_path ? <Image src={data.logo_path} alt="Prévia do logo" width={64} height={64} unoptimized /> : <span>{data.company_name ? data.company_name.slice(0, 2).toUpperCase() : "＋"}</span>}</div><div><b>Logo da empresa</b><small>PNG, JPG ou WebP. Máximo de 2 MB.</small><label className="upload-button">Escolher imagem<input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => uploadLogo(event.target.files?.[0]).catch((reason: Error) => setError(reason.message))} /></label>{data.logo_path && <button type="button" className="subtle-button" onClick={() => update("logo_path", "")}>Remover logo</button>}</div></div>
         <div className="form-grid"><Field label="Razão social / nome da empresa *" value={data.company_name} required onChange={(v) => update("company_name", v)} /><Field label="Nome fantasia" value={data.trade_name} onChange={(v) => update("trade_name", v)} /><Field label="CNPJ" value={data.tax_id} onChange={(v) => update("tax_id", v)} /><label className="form-field"><span>Segmento</span><select value={data.industry} onChange={(event) => update("industry", event.target.value)}><option value="">Selecione um segmento</option>{CLIENT_SEGMENTS.map((segment) => <option key={segment} value={segment}>{segment}</option>)}</select></label><Field label="Site" type="url" value={data.website} onChange={(v) => update("website", v)} /><Field label="Telefone geral" type="tel" value={data.phone} onChange={(v) => update("phone", v)} /><Field label="E-mail geral" type="email" value={data.email} onChange={(v) => update("email", v)} /></div></section>

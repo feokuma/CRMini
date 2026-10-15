@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Breadcrumbs from "@/components/breadcrumbs";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { formatBrazilDate } from "@/lib/project-time";
@@ -47,7 +48,7 @@ export default function ContactsView() {
   }, [query, segment]);
 
   return (
-    <main className="records-page">
+    <main className="records-page"><Breadcrumbs items={[{ label: "Meu espaço", href: "/" }, { label: "Contatos" }]} />
       <header className="records-header">
         <div><p className="eyebrow">RELACIONAMENTO</p><h1>Contatos</h1><p className="subheading">Pessoas e informações de contato dos seus clientes.</p></div>
         <Link className="primary-button" href="/clientes/novo">＋ Cadastrar cliente</Link>

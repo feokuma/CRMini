@@ -1,3 +1,4 @@
+import Breadcrumbs from "@/components/breadcrumbs";
 import Link from "next/link";
 import { pool } from "@/lib/db";
 import { getRecentOpportunities, type RecentOpportunity } from "@/lib/recent-opportunities";
@@ -19,10 +20,10 @@ export default async function Home() {
   }
   return (
     <>
-      <section className="main-area" id="inicio">
-        <header className="topbar"><div className="breadcrumb">Meu espaço <span>/</span> <b>Visão geral</b></div><div className="top-actions"><button className="icon-button" aria-label="Ajuda">?</button><button className="icon-button notification" aria-label="Notificações">♧</button><div className="top-avatar">AF</div></div></header>
-        <div className="content">
-          <div className="welcome-row"><div><p className="eyebrow">{getDashboardDate()}</p><h1>{getGreeting()} <span>✳</span></h1><p className="subheading">Aqui está o resumo do que acontece no seu espaço.</p></div><button className="primary-button"><span>＋</span> Novo contato</button></div>
+      <main className="records-page" id="inicio">
+        <Breadcrumbs items={[{ label: "Meu espaço", href: "/" }, { label: "Visão geral" }]} />
+        <header className="records-header"><div><p className="eyebrow">{getDashboardDate()}</p><h1>{getGreeting()} <span>✳</span></h1><p className="subheading">Aqui está o resumo do que acontece no seu espaço.</p></div><button className="primary-button"><span>＋</span> Novo contato</button></header>
+        <div className="dashboard-content">
           <div className="metric-grid">
             <Link className="metric-card" href="/contatos"><div className="metric-top"><span>Contatos</span><span className="metric-icon">◎</span></div><div className="metric-value">{stats.contactsCount}</div><div className="metric-change">Ver contatos →</div></Link>
             <Link className="metric-card" href="/oportunidades"><div className="metric-top"><span>Oportunidades</span><span className="metric-icon">↗</span></div><div className="metric-value">{stats.opportunitiesCount}</div><div className="metric-change">{stats.openOpportunitiesCount} em aberto</div></Link>
@@ -33,7 +34,7 @@ export default async function Home() {
           <section className="table-card" id="oportunidades"><div className="table-scroll"><table><thead><tr><th>OPORTUNIDADE</th><th>ETAPA</th><th>VALOR</th><th>ATUALIZADO</th></tr></thead><tbody>{opportunities.map((opportunity, index) => <tr key={opportunity.id}><td><div className="contact-cell"><span className={`contact-avatar ${avatarColors[index % avatarColors.length]}`}>{opportunity.contact_name.trim().slice(0, 2).toUpperCase()}</span><span><b>{opportunity.name}</b><small>{opportunity.company_name} · {opportunity.contact_name}</small></span></div></td><td><span className={`stage stage-${avatarColors[index % avatarColors.length]}`}><i />{opportunity.status}</span></td><td className="amount">{opportunity.value == null ? "—" : `${opportunity.currency} ${Number(opportunity.value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}</td><td className="date">{new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium" }).format(new Date(opportunity.updated_at))}</td></tr>)}</tbody></table></div><div className="table-footer">{opportunities.length ? <>Mostrando <b>{opportunities.length}</b> oportunidades recentes</> : "Nenhuma oportunidade cadastrada ainda."}<Link className="text-link" href="/oportunidades/nova">＋ Nova oportunidade</Link></div></section>
           <footer className="page-footer">Feito para relações que fazem sentido <span>✳</span></footer>
         </div>
-      </section>
+      </main>
     </>
   );
 }

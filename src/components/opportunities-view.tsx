@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Breadcrumbs from "@/components/breadcrumbs";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { formatBrazilDate, getBrazilDateString, toProjectHours } from "@/lib/project-time";
@@ -22,7 +23,7 @@ export default function OpportunitiesView({ mode = "list" }: { mode?: "list" | "
     if (data.status !== "Perdida") data.loss_reason = "";
     try { const response = await fetch("/api/opportunities", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }); const result = await response.json(); if (!response.ok) throw new Error(result.error); router.push("/oportunidades"); router.refresh(); } catch (e) { setError((e as Error).message); }
   }
-  return <main className="records-page"><header className="records-header"><div><p className="eyebrow">VENDAS</p><h1>{mode === "form" ? "Nova oportunidade" : "Oportunidades"}</h1><p className="subheading">Acompanhe propostas e negócios vinculados aos clientes.</p></div>{mode === "form" ? <Link href="/oportunidades" className="text-link">← Voltar às oportunidades</Link> : <Link href="/oportunidades/nova" className="primary-button">＋ Nova oportunidade</Link>}</header>
+  return <main className="records-page"><Breadcrumbs items={[{ label: "Meu espaço", href: "/" }, { label: "Oportunidades", href: mode === "form" ? "/oportunidades" : undefined }, ...(mode === "form" ? [{ label: "Nova oportunidade" }] : [])]} /><header className="records-header"><div><p className="eyebrow">VENDAS</p><h1>{mode === "form" ? "Nova oportunidade" : "Oportunidades"}</h1><p className="subheading">Acompanhe propostas e negócios vinculados aos clientes.</p></div>{mode === "form" ? <Link href="/oportunidades" className="text-link">← Voltar às oportunidades</Link> : <Link href="/oportunidades/nova" className="primary-button">＋ Nova oportunidade</Link>}</header>
     {mode === "form" && <section className="form-section"><h2>Dados da oportunidade</h2><form className="client-form" onSubmit={submit}><div className="form-grid">
       <label className="form-field">Nome *<input name="name" required /></label><label className="form-field">Cliente *<select name="client_id" required value={clientId} onChange={(e) => setClientId(e.target.value)}><option value="">Selecione</option>{clients.filter((c) => c.is_active !== false).map((c) => <option key={c.id} value={c.id}>{c.company_name}</option>)}</select></label>
       <label className="form-field">Contato *<select name="contact_id" required disabled={!clientId}><option value="">Selecione</option>{client?.contacts?.map((c) => <option key={c.id} value={c.id}>{c.full_name}</option>)}</select></label>
