@@ -30,16 +30,25 @@ function waitForServer(url, timeoutMs = 30000) {
 
 async function createWindow() {
   const projectDir = path.resolve(__dirname, "..");
-  nextProcess = spawn("npm", ["run", "start", "--", "--hostname", host, "--port", String(port)], {
-    cwd: projectDir,
-    stdio: "inherit",
-    shell: process.platform === "win32",
-    env: { ...process.env, HOSTNAME: host, PORT: String(port) },
-  });
+  nextProcess = spawn(
+    "npm",
+    ["run", "start", "--", "--hostname", host, "--port", String(port)],
+    {
+      cwd: projectDir,
+      stdio: "inherit",
+      shell: process.platform === "win32",
+      env: { ...process.env, HOSTNAME: host, PORT: String(port) },
+    },
+  );
 
   try {
     await waitForServer(`http://${host}:${port}`);
-    mainWindow = new BrowserWindow({ width: 1440, height: 900, minWidth: 900, minHeight: 600 });
+    mainWindow = new BrowserWindow({
+      width: 1440,
+      height: 900,
+      minWidth: 900,
+      minHeight: 600,
+    });
     await mainWindow.loadURL(`http://${host}:${port}`);
   } catch (error) {
     console.error(error);

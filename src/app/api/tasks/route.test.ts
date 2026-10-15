@@ -16,13 +16,23 @@ describe("GET /api/tasks", () => {
   });
 
   it("applies the requested day and status filters", async () => {
-    const response = await GET(new NextRequest("http://localhost/api/tasks?date=2026-10-14&status=Aberto"));
+    const response = await GET(
+      new NextRequest(
+        "http://localhost/api/tasks?date=2026-10-14&status=Aberto",
+      ),
+    );
     expect(response.status).toBe(200);
-    expect(listTasks).toHaveBeenCalledWith("2026-10-14T03:00:00.000Z", "2026-10-15T03:00:00.000Z", "Aberto");
+    expect(listTasks).toHaveBeenCalledWith(
+      "2026-10-14T03:00:00.000Z",
+      "2026-10-15T03:00:00.000Z",
+      "Aberto",
+    );
   });
 
   it("rejects an unsupported status", async () => {
-    const response = await GET(new NextRequest("http://localhost/api/tasks?status=Inválido"));
+    const response = await GET(
+      new NextRequest("http://localhost/api/tasks?status=Inválido"),
+    );
     expect(response.status).toBe(400);
     expect(listTasks).not.toHaveBeenCalled();
   });

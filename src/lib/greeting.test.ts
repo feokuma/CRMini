@@ -15,23 +15,26 @@ describe("getGreeting", () => {
     expect(greetingNameSuffixPattern.test(noon)).toBe(true);
     expect(greetingNameSuffixPattern.test(beforeEvening)).toBe(true);
     expect(greetingNameSuffixPattern.test(evening)).toBe(true);
-    expect(getGreeting(new Date("2025-02-01T15:00:00Z"), "Ana").endsWith(", Ana")).toBe(true);
+    expect(
+      getGreeting(new Date("2025-02-01T15:00:00Z"), "Ana").endsWith(", Ana"),
+    ).toBe(true);
   });
 
   it("varia diariamente entre saudações comuns e religiosas", () => {
-    const greetings = Array.from(
-      { length: 366 },
-      (_, day) => {
-        const timestamp = Date.UTC(2025, 0, day + 1, 15);
+    const greetings = Array.from({ length: 366 }, (_, day) => {
+      const timestamp = Date.UTC(2025, 0, day + 1, 15);
 
-        return getGreeting(new Date(timestamp));
-      },
-    );
+      return getGreeting(new Date(timestamp));
+    });
     const uniqueGreetings = new Set(greetings);
 
     expect(uniqueGreetings.size).toBeGreaterThan(10);
-    expect(greetings.some((greeting) => greeting.startsWith("A paz de Cristo"))).toBe(true);
-    expect(greetings.some((greeting) => commonGreetingPrefixPattern.test(greeting))).toBe(true);
+    expect(
+      greetings.some((greeting) => greeting.startsWith("A paz de Cristo")),
+    ).toBe(true);
+    expect(
+      greetings.some((greeting) => commonGreetingPrefixPattern.test(greeting)),
+    ).toBe(true);
     expect(getGreeting(new Date("2025-02-01T15:00:00Z"))).toBe(
       getGreeting(new Date("2025-02-01T15:00:00Z")),
     );

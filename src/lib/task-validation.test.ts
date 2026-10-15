@@ -10,14 +10,19 @@ const validTask = {
 };
 
 describe("validateTask", () => {
-  it.each(["email", "telefone", "compromisso"])("aceita o tipo %s", (contact_type) => {
-    expect(validateTask({ ...validTask, contact_type })).toBeNull();
-  });
+  it.each(["email", "telefone", "compromisso"])(
+    "aceita o tipo %s",
+    (contact_type) => {
+      expect(validateTask({ ...validTask, contact_type })).toBeNull();
+    },
+  );
 
   it("aceita descrição ausente ou opcional dentro do limite", () => {
     expect(validateTask(validTask)).toBeNull();
     expect(validateTask({ ...validTask, description: "" })).toBeNull();
-    expect(validateTask({ ...validTask, description: "x".repeat(5000) })).toBeNull();
+    expect(
+      validateTask({ ...validTask, description: "x".repeat(5000) }),
+    ).toBeNull();
   });
 
   it.each([

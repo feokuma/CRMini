@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { getDashboardMetrics } from "./dashboard-metrics";
 import { getGreeting } from "./greeting";
-import { toProjectHours, formatBrazilDate, formatBrazilDateTime } from "./project-time";
+import {
+  toProjectHours,
+  formatBrazilDate,
+  formatBrazilDateTime,
+} from "./project-time";
 import { getRecentOpportunities } from "./recent-opportunities";
 import { saoPauloDayRange } from "./task-date";
 import { validateTask } from "./task-validation";
@@ -42,11 +46,14 @@ describe("regras de tarefas", () => {
 });
 
 describe("duração e apresentação de datas", () => {
-  it.each([["hours", 3, 3], ["days", 2, 16], ["weeks", 2, 80], ["months", 1, 160]] as const)(
-    "converte %s para horas", (unit, amount, expected) => {
-      expect(toProjectHours(amount, unit)).toBe(expected);
-    },
-  );
+  it.each([
+    ["hours", 3, 3],
+    ["days", 2, 16],
+    ["weeks", 2, 80],
+    ["months", 1, 160],
+  ] as const)("converte %s para horas", (unit, amount, expected) => {
+    expect(toProjectHours(amount, unit)).toBe(expected);
+  });
 
   it("preserva zero, trata vazio como opcional e rejeita valores inválidos", () => {
     expect(toProjectHours(0, "days")).toBe(0);
@@ -57,32 +64,54 @@ describe("duração e apresentação de datas", () => {
 
   it("formata datas e horários no padrão brasileiro e fuso de Brasília", () => {
     expect(formatBrazilDate("2026-01-01T02:00:00Z")).toBe("31/12/2025");
-    expect(formatBrazilDateTime("2026-01-01T02:00:00Z")).toContain("31/12/2025");
+    expect(formatBrazilDateTime("2026-01-01T02:00:00Z")).toContain(
+      "31/12/2025",
+    );
     expect(formatBrazilDate(null)).toBe("—");
   });
 });
 
 describe("saudação e métricas do painel", () => {
   it("escolhe a saudação conforme hora de Brasília", () => {
-    expect(getGreeting(new Date("2026-10-12T10:00:00-03:00"))).toMatch(/, Djardi$/);
-    expect(getGreeting(new Date("2026-10-12T15:00:00-03:00"))).toMatch(/, Djardi$/);
-    expect(getGreeting(new Date("2026-10-12T21:00:00-03:00"))).toMatch(/, Djardi$/);
+    expect(getGreeting(new Date("2026-10-12T10:00:00-03:00"))).toMatch(
+      /, Djardi$/,
+    );
+    expect(getGreeting(new Date("2026-10-12T15:00:00-03:00"))).toMatch(
+      /, Djardi$/,
+    );
+    expect(getGreeting(new Date("2026-10-12T21:00:00-03:00"))).toMatch(
+      /, Djardi$/,
+    );
   });
 
   it("agrega conversão sobre oportunidades encerradas e valores por moeda", async () => {
-    const query = vi.fn(async () => ({ rows: [{
-      contacts_count: 10, opportunities_count: 8, open_opportunities_count: 5,
-      won_count: 2, lost_count: 1, open_value_by_currency: { BRL: "1500.00" },
-    }] }));
+    const query = vi.fn(async () => ({
+      rows: [
+        {
+          contacts_count: 10,
+          opportunities_count: 8,
+          open_opportunities_count: 5,
+          won_count: 2,
+          lost_count: 1,
+          open_value_by_currency: { BRL: "1500.00" },
+        },
+      ],
+    }));
     await expect(getDashboardMetrics(query)).resolves.toMatchObject({
-      contactsCount: 10, openOpportunitiesCount: 5, conversionRate: 67,
+      contactsCount: 10,
+      openOpportunitiesCount: 5,
+      conversionRate: 67,
       openValueByCurrency: { BRL: "1500.00" },
     });
     expect(query.mock.calls[0][0]).toMatch(/GROUP BY currency/);
   });
 
   it("propaga falhas de consulta ao painel", async () => {
-    await expect(getDashboardMetrics(async () => { throw new Error("falha SQL"); })).rejects.toThrow("falha SQL");
+    await expect(
+      getDashboardMetrics(async () => {
+        throw new Error("falha SQL");
+      }),
+    ).rejects.toThrow("falha SQL");
   });
 });
 
@@ -96,7 +125,13 @@ describe("oportunidades recentes", () => {
   });
 
   it("retorna vazio sem resultados e propaga erro do banco", async () => {
-    await expect(getRecentOpportunities(async () => ({ rows: [] }))).resolves.toEqual([]);
-    await expect(getRecentOpportunities(async () => { throw new Error("sem banco"); })).rejects.toThrow("sem banco");
+    await expect(
+      getRecentOpportunities(async () => ({ rows: [] })),
+    ).resolves.toEqual([]);
+    await expect(
+      getRecentOpportunities(async () => {
+        throw new Error("sem banco");
+      }),
+    ).rejects.toThrow("sem banco");
   });
 });

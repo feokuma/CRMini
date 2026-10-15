@@ -1,6 +1,9 @@
 import { pool } from "@/lib/db";
 
-export async function listContacts(query: string | null, industry: string | null) {
+export async function listContacts(
+  query: string | null,
+  industry: string | null,
+) {
   const { rows } = await pool.query(
     `SELECT p.id, p.full_name, p.job_title, p.email, p.phone, p.mobile,
       p.birthday, p.linkedin_url, p.notes, p.is_primary, p.client_id,
@@ -11,6 +14,8 @@ export async function listContacts(query: string | null, industry: string | null
        OR p.phone ILIKE '%' || $1 || '%' OR p.mobile ILIKE '%' || $1 || '%'
        OR c.company_name ILIKE '%' || $1 || '%' OR c.trade_name ILIKE '%' || $1 || '%')
        AND ($2::text IS NULL OR c.industry = $2)
-     ORDER BY c.company_name, p.is_primary DESC, p.full_name`, [query, industry]);
+     ORDER BY c.company_name, p.is_primary DESC, p.full_name`,
+    [query, industry],
+  );
   return rows;
 }

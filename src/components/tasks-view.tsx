@@ -96,7 +96,8 @@ export default function TasksView({
       .catch(() => setError("Não foi possível carregar clientes."));
   }, []);
   useEffect(() => {
-    if (mode === "list" && filtersReady) load().catch((e: Error) => setError(e.message));
+    if (mode === "list" && filtersReady)
+      load().catch((e: Error) => setError(e.message));
   }, [date, status, mode, filtersReady]);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

@@ -9,8 +9,9 @@ describe("saoPauloDayRange", () => {
     });
   });
 
-  it.each(["2026-02-30", "09-10-2026", "2026-1-09", ""]) (
-    "rejeita a data civil inválida %j", (day) => {
+  it.each(["2026-02-30", "09-10-2026", "2026-1-09", ""])(
+    "rejeita a data civil inválida %j",
+    (day) => {
       expect(() => saoPauloDayRange(day)).toThrow("Data inválida.");
     },
   );

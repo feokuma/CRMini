@@ -1,3 +1,5 @@
 import ClientsView from "@/components/clients-view";
 
-export default function ClientsPage() { return <ClientsView />; }
+export default function ClientsPage() {
+  return <ClientsView />;
+}

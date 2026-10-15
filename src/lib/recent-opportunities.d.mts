@@ -9,4 +9,6 @@ export type RecentOpportunity = {
   updated_at: string;
 };
 
-export function getRecentOpportunities(query: (sql: string) => Promise<{ rows: RecentOpportunity[] }>): Promise<RecentOpportunity[]>;
+export function getRecentOpportunities(
+  query: (sql: string) => Promise<{ rows: RecentOpportunity[] }>,
+): Promise<RecentOpportunity[]>;

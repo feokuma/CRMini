@@ -10,6 +10,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(await listContacts(query, industry));
   } catch (error) {
     console.error("Failed to list contacts", error);
-    return NextResponse.json({ error: "Não foi possível carregar os contatos." }, { status: 503 });
+    return NextResponse.json(
+      { error: "Não foi possível carregar os contatos." },
+      { status: 503 },
+    );
   }
 }

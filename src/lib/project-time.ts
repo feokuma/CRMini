@@ -1,4 +1,9 @@
-const hoursPerUnit = Object.freeze({ hours: 1, days: 8, weeks: 40, months: 160 });
+const hoursPerUnit = Object.freeze({
+  hours: 1,
+  days: 8,
+  weeks: 40,
+  months: 160,
+});
 const dateOnlyPattern = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 export type ProjectTimeUnit = keyof typeof hoursPerUnit;
@@ -27,8 +32,7 @@ export function getBrazilDateString(date: Date = new Date()): string {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  })
-    .formatToParts(date);
+  }).formatToParts(date);
   const values = Object.fromEntries(
     parts.map(({ type, value }) => [type, value]),
   );
@@ -43,8 +47,7 @@ export function formatBrazilDate(
     return "—";
   }
 
-  const dateOnly = dateOnlyPattern
-    .exec(String(value));
+  const dateOnly = dateOnlyPattern.exec(String(value));
 
   if (dateOnly) {
     return `${dateOnly[3]}/${dateOnly[2]}/${dateOnly[1]}`;
@@ -54,8 +57,7 @@ export function formatBrazilDate(
 
   return new Intl.DateTimeFormat("pt-BR", {
     timeZone: "America/Sao_Paulo",
-  })
-    .format(date);
+  }).format(date);
 }
 
 export function formatBrazilDateTime(
@@ -71,6 +73,5 @@ export function formatBrazilDateTime(
     timeZone: "America/Sao_Paulo",
     dateStyle: "short",
     timeStyle: "short",
-  })
-    .format(date);
+  }).format(date);
 }

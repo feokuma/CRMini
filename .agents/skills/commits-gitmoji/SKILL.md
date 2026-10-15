@@ -32,18 +32,18 @@ Exemplos:
 
 ## Gitmojis comuns
 
-| Gitmoji | Uso |
-| --- | --- |
-| ✨ | Nova funcionalidade |
-| 🐛 | Correção de bug |
-| 📝 | Documentação |
-| 🎨 | Formatação ou estrutura visual sem alteração funcional |
-| ♻️ | Refatoração sem mudança de comportamento |
-| 🧪 | Testes |
-| ⚡️ | Melhoria de desempenho |
-| 🔒 | Segurança |
-| 🔧 | Configuração ou ferramentas |
-| 🚀 | Implantação ou entrega |
-| 🔥 | Remoção de código ou arquivos |
+| Gitmoji | Uso                                                    |
+| ------- | ------------------------------------------------------ |
+| ✨      | Nova funcionalidade                                    |
+| 🐛      | Correção de bug                                        |
+| 📝      | Documentação                                           |
+| 🎨      | Formatação ou estrutura visual sem alteração funcional |
+| ♻️      | Refatoração sem mudança de comportamento               |
+| 🧪      | Testes                                                 |
+| ⚡️      | Melhoria de desempenho                                 |
+| 🔒      | Segurança                                              |
+| 🔧      | Configuração ou ferramentas                            |
+| 🚀      | Implantação ou entrega                                 |
+| 🔥      | Remoção de código ou arquivos                          |
 
 Escolha o símbolo que melhor representa a intenção principal do commit; não use Gitmoji apenas como decoração.

@@ -9,18 +9,28 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(await listClients(search || null));
   } catch (error) {
     console.error("Failed to list clients", error);
-    return NextResponse.json({ error: "Não foi possível carregar os clientes." }, { status: 503 });
+    return NextResponse.json(
+      { error: "Não foi possível carregar os clientes." },
+      { status: 503 },
+    );
   }
 }
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  if (!body.company_name?.trim()) return NextResponse.json({ error: "Informe o nome da empresa." }, { status: 400 });
+  if (!body.company_name?.trim())
+    return NextResponse.json(
+      { error: "Informe o nome da empresa." },
+      { status: 400 },
+    );
   try {
     const client = await createClient(body);
     return NextResponse.json(client, { status: 201 });
   } catch (error) {
     console.error("Failed to create client", error);
-    return NextResponse.json({ error: "Não foi possível cadastrar o cliente." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Não foi possível cadastrar o cliente." },
+      { status: 500 },
+    );
   }
 }

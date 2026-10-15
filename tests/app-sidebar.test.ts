@@ -7,17 +7,17 @@ const pathnameHookPattern = /usePathname\(\)/;
 const navigationDestinationPattern = /\[("[^"]+"),\s*"[^"]+",\s*"([^"]+)"\]/g;
 const rootPathActivePattern = /pathname === "\/"/;
 const nestedPathActivePattern = /pathname\.startsWith\(href\)/;
-const activePageAttributePattern = /aria-current=\{active \? "page" : undefined\}/;
-const fixedSidebarStylePattern = /\.sidebar\{position:sticky;top:0;height:100vh;min-height:0;overflow:hidden;/;
-const compactSidebarMediaPattern = /@media\(max-width:680px\)\{\.sidebar\{width:62px/;
+const activePageAttributePattern =
+  /aria-current=\{active \? "page" : undefined\}/;
+const fixedSidebarStylePattern =
+  /\.sidebar\{position:sticky;top:0;height:100vh;min-height:0;overflow:hidden;/;
+const compactSidebarMediaPattern =
+  /@media\(max-width:680px\)\{\.sidebar\{width:62px/;
 const hiddenCompactLabelPattern = /\.sidebar \.nav-item\{[^}]*font-size:0/;
 const visibleCompactIconPattern = /\.sidebar \.nav-item>span\{font-size:18px/;
 
 async function readProjectFile(file: string): Promise<string> {
-  return readFile(
-    new URL(file, import.meta.url),
-    "utf8",
-  );
+  return readFile(new URL(file, import.meta.url), "utf8");
 }
 
 describe("menu lateral", () => {
@@ -32,8 +32,9 @@ describe("menu lateral", () => {
 
   it("contém os cinco destinos principais e indica a rota atual", async () => {
     const sidebar = await readProjectFile("../src/components/app-sidebar.tsx");
-    const destinations = [...sidebar.matchAll(navigationDestinationPattern)]
-      .map(([, href, label]) => [JSON.parse(href), label]);
+    const destinations = [
+      ...sidebar.matchAll(navigationDestinationPattern),
+    ].map(([, href, label]) => [JSON.parse(href), label]);
 
     expect(destinations).toEqual([
       ["/", "Visão geral"],

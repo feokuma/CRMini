@@ -8,8 +8,14 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("next/link", () => ({
-  default: ({ href, children, ...props }: React.ComponentProps<"a"> & { href: string }) => (
-    <a href={href} {...props}>{children}</a>
+  default: ({
+    href,
+    children,
+    ...props
+  }: React.ComponentProps<"a"> & { href: string }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
   ),
 }));
 
@@ -24,37 +30,69 @@ describe("Menu lateral", () => {
     expect(screen.getByRole("link", { name: "Mini CRM" })).toBeInTheDocument();
     expect(screen.getByText("Mini")).toBeInTheDocument();
     expect(screen.getByText("CRM")).toBeInTheDocument();
-    expect(screen.getByAltText("Reply CRM")).toHaveAttribute("src", expect.stringContaining("reply-favicon.ico"));
+    expect(screen.getByAltText("Reply CRM")).toHaveAttribute(
+      "src",
+      expect.stringContaining("reply-favicon.ico"),
+    );
   });
 
   it("exibe somente os destinos principais da navegação", () => {
     pathname.current = "/";
     render(<AppSidebar />);
 
-    const navigation = screen.getByRole("navigation", { name: "Navegação principal" });
+    const navigation = screen.getByRole("navigation", {
+      name: "Navegação principal",
+    });
     expect(navigation.querySelectorAll("a")).toHaveLength(5);
-    expect(screen.getByRole("link", { name: "Visão geral" })).toHaveAttribute("href", "/");
-    expect(screen.getByRole("link", { name: "Clientes" })).toHaveAttribute("href", "/clientes");
-    expect(screen.getByRole("link", { name: "Contatos" })).toHaveAttribute("href", "/contatos");
-    expect(screen.getByRole("link", { name: "Oportunidades" })).toHaveAttribute("href", "/oportunidades");
-    expect(screen.getByRole("link", { name: "Tarefas" })).toHaveAttribute("href", "/tarefas");
+    expect(screen.getByRole("link", { name: "Visão geral" })).toHaveAttribute(
+      "href",
+      "/",
+    );
+    expect(screen.getByRole("link", { name: "Clientes" })).toHaveAttribute(
+      "href",
+      "/clientes",
+    );
+    expect(screen.getByRole("link", { name: "Contatos" })).toHaveAttribute(
+      "href",
+      "/contatos",
+    );
+    expect(screen.getByRole("link", { name: "Oportunidades" })).toHaveAttribute(
+      "href",
+      "/oportunidades",
+    );
+    expect(screen.getByRole("link", { name: "Tarefas" })).toHaveAttribute(
+      "href",
+      "/tarefas",
+    );
   });
 
   it("indica a área atual em rotas internas sem ativar a visão geral", () => {
     pathname.current = "/oportunidades/nova";
     render(<AppSidebar />);
 
-    expect(screen.getByRole("link", { name: "Oportunidades" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("link", { name: "Visão geral" })).not.toHaveAttribute("aria-current");
-    expect(screen.getByRole("link", { name: "Clientes" })).not.toHaveAttribute("aria-current");
+    expect(screen.getByRole("link", { name: "Oportunidades" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(
+      screen.getByRole("link", { name: "Visão geral" }),
+    ).not.toHaveAttribute("aria-current");
+    expect(screen.getByRole("link", { name: "Clientes" })).not.toHaveAttribute(
+      "aria-current",
+    );
   });
 
   it("indica somente a visão geral como ativa na página inicial", () => {
     pathname.current = "/";
     render(<AppSidebar />);
 
-    expect(screen.getByRole("link", { name: "Visão geral" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("link", { name: "Tarefas" })).not.toHaveAttribute("aria-current");
+    expect(screen.getByRole("link", { name: "Visão geral" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByRole("link", { name: "Tarefas" })).not.toHaveAttribute(
+      "aria-current",
+    );
   });
 
   it("mantém rótulos acessíveis e descritivos nos links com ícones", () => {
@@ -63,6 +101,9 @@ describe("Menu lateral", () => {
 
     const contactsLink = screen.getByRole("link", { name: "Contatos" });
     expect(contactsLink).toHaveAttribute("title", "Contatos");
-    expect(contactsLink.querySelector("span")).toHaveAttribute("aria-hidden", "true");
+    expect(contactsLink.querySelector("span")).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
   });
 });

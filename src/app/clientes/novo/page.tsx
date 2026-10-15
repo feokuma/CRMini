@@ -1,3 +1,5 @@
 import ClientForm from "@/components/client-form";
 
-export default function NewClientPage() { return <ClientForm />; }
+export default function NewClientPage() {
+  return <ClientForm />;
+}
