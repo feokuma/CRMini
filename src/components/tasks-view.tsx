@@ -3,7 +3,6 @@ import Link from "next/link";
 import Breadcrumbs from "@/components/breadcrumbs";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
-import { getBrazilDateString } from "@/lib/project-time";
 
 type Client = {
   id: string;
@@ -54,20 +53,42 @@ export default function TasksView({
   mode?: "list" | "form";
 }) {
   const router = useRouter();
+  const [filtersReady, setFiltersReady] = useState(false);
   const [clients, setClients] = useState<Client[]>([]),
     [tasks, setTasks] = useState<Task[]>([]),
     [clientId, setClientId] = useState(""),
-    [date, setDate] = useState(getBrazilDateString()),
+    [date, setDate] = useState(""),
     [status, setStatus] = useState(""),
     [error, setError] = useState("");
   async function load() {
+    const params = new URLSearchParams();
+    if (date) params.set("date", date);
+    if (status) params.set("status", status);
     const r = await fetch(
-      `/api/tasks?date=${encodeURIComponent(date)}${status ? `&status=${encodeURIComponent(status)}` : ""}`,
+      `/api/tasks${params.size ? `?${params.toString()}` : ""}`,
     );
     const data = await r.json();
     if (!r.ok) throw new Error(data.error);
     setTasks(data);
   }
+  useEffect(() => {
+    try {
+      setDate(sessionStorage.getItem("tasks-date-filter") ?? "");
+    } catch {
+      // If session storage is unavailable, keep the filter empty for this mount.
+    } finally {
+      setFiltersReady(true);
+    }
+  }, []);
+  useEffect(() => {
+    if (!filtersReady) return;
+    try {
+      if (date) sessionStorage.setItem("tasks-date-filter", date);
+      else sessionStorage.removeItem("tasks-date-filter");
+    } catch {
+      // The filter remains usable even when session storage is unavailable.
+    }
+  }, [date, filtersReady]);
   useEffect(() => {
     fetch("/api/clients")
       .then((r) => r.json())
@@ -75,8 +96,8 @@ export default function TasksView({
       .catch(() => setError("Não foi possível carregar clientes."));
   }, []);
   useEffect(() => {
-    if (mode === "list") load().catch((e: Error) => setError(e.message));
-  }, [date, status, mode]);
+    if (mode === "list" && filtersReady) load().catch((e: Error) => setError(e.message));
+  }, [date, status, mode, filtersReady]);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
@@ -244,8 +265,8 @@ export default function TasksView({
           {!tasks.length && !error ? (
             <div className="empty-state">
               <span>✓</span>
-              <h2>Nenhuma tarefa neste dia</h2>
-              <p>Crie uma tarefa ou selecione outra data.</p>
+              <h2>Nenhuma tarefa encontrada</h2>
+              <p>Crie uma tarefa ou ajuste os filtros.</p>
               <Link className="primary-button" href="/tarefas/nova">
                 ＋ Nova tarefa
               </Link>
