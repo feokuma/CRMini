@@ -1,5 +1,13 @@
-const { app, BrowserWindow } = require("electron");
+const { app, BrowserWindow, dialog } = require("electron");
 const { spawn } = require("node:child_process");
+const fs = require("node:fs");
+const {
+  defaultDatabasePath,
+  validateDatabase,
+  migrateLegacyDatabase,
+  selectDatabasePath,
+  shouldMigrateLegacy,
+} = require("../database/sqlite-paths.cjs");
 const http = require("node:http");
 const path = require("node:path");
 
@@ -28,8 +36,64 @@ function waitForServer(url, timeoutMs = 30000) {
   });
 }
 
+async function chooseDatabase() {
+  const fallback = defaultDatabasePath({ userData: app.getPath("userData") });
+  const choice = await dialog.showMessageBox({
+    type: "question",
+    buttons: [
+      "Usar padrão",
+      "Abrir banco existente",
+      "Criar/selecionar arquivo",
+      "Cancelar",
+    ],
+    defaultId: 0,
+    cancelId: 3,
+    title: "Banco de dados",
+    message: "Escolha o banco SQLite do CRM",
+  });
+  if (choice.response === 3) return null;
+  if (choice.response === 0) {
+    const legacy = path.resolve(__dirname, "../database/crm.sqlite");
+    if (shouldMigrateLegacy()) await migrateLegacyDatabase(legacy, fallback);
+    return fallback;
+  }
+  const result =
+    choice.response === 1
+      ? await dialog.showOpenDialog({
+          properties: ["openFile"],
+          filters: [{ name: "SQLite", extensions: ["sqlite", "db"] }],
+        })
+      : await dialog.showSaveDialog({
+          defaultPath: fallback,
+          properties: [],
+          filters: [{ name: "SQLite", extensions: ["sqlite", "db"] }],
+        });
+  const selected = result.canceled
+    ? null
+    : result.filePath || result.filePaths?.[0];
+  if (!selected) return null;
+  if (choice.response === 2 && fs.existsSync(selected)) {
+    dialog.showErrorBox(
+      "Arquivo já existe",
+      "Selecione um novo caminho; arquivos existentes não serão sobrescritos.",
+    );
+    return null;
+  }
+  try {
+    return selectDatabasePath({ choice: "selected", selected });
+  } catch (error) {
+    dialog.showErrorBox("Banco inválido", error.message);
+    return null;
+  }
+}
+
 async function createWindow() {
   const projectDir = path.resolve(__dirname, "..");
+  const databasePath = await chooseDatabase();
+  if (!databasePath) {
+    app.quit();
+    return;
+  }
   nextProcess = spawn(
     "npm",
     ["run", "start", "--", "--hostname", host, "--port", String(port)],
@@ -37,7 +101,12 @@ async function createWindow() {
       cwd: projectDir,
       stdio: "inherit",
       shell: process.platform === "win32",
-      env: { ...process.env, HOSTNAME: host, PORT: String(port) },
+      env: {
+        ...process.env,
+        HOSTNAME: host,
+        PORT: String(port),
+        SQLITE_PATH: databasePath,
+      },
     },
   );
 
@@ -56,7 +125,13 @@ async function createWindow() {
   }
 }
 
-app.whenReady().then(createWindow);
+app
+  .whenReady()
+  .then(createWindow)
+  .catch((error) => {
+    dialog.showErrorBox("Erro no banco", error.message);
+    app.quit();
+  });
 app.on("window-all-closed", () => app.quit());
 app.on("before-quit", () => nextProcess?.kill());
 app.on("activate", () => {

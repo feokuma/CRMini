@@ -4,16 +4,22 @@ import Database from "better-sqlite3";
 import { normalizeSearch } from "@/lib/normalize-search";
 
 const databaseDir = path.join(process.cwd(), "database");
-const defaultDatabaseFile = path.join(databaseDir, "crm.sqlite");
+const paths =
+  require("../../database/sqlite-paths.cjs") as typeof import("../../database/sqlite-paths.cjs");
+const defaultDatabaseFile = paths.defaultDatabasePath();
 const schemaFile = path.join(databaseDir, "init.sql");
 
 const globalForDb = globalThis as unknown as { crmSqlite?: Database.Database };
 
 function openDatabase(): Database.Database {
-  const filename = process.env.SQLITE_PATH || defaultDatabaseFile;
+  const filename = defaultDatabaseFile;
   if (filename !== ":memory:") {
     fs.mkdirSync(path.dirname(filename), { recursive: true });
   }
+  if (filename !== ":memory:" && paths.shouldMigrateLegacy())
+    paths.migrateLegacyDatabase(path.join(databaseDir, "crm.sqlite"), filename);
+  const existed = filename === ":memory:" || fs.existsSync(filename);
+  if (existed && filename !== ":memory:") paths.validateDatabase(filename);
   const sqlite = new Database(filename);
   sqlite.function("normalize", normalizeSearch);
   sqlite.pragma("journal_mode = WAL");

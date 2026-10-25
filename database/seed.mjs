@@ -11,13 +11,23 @@ try {
 }
 
 const databaseDir = path.join(process.cwd(), "database");
-const filename = process.env.SQLITE_PATH || path.join(databaseDir, "crm.sqlite");
+const {
+  defaultDatabasePath,
+  migrateLegacyDatabase,
+  validateDatabase,
+  shouldMigrateLegacy,
+} = require("./sqlite-paths.cjs");
+const filename = defaultDatabasePath();
 
 if (filename !== ":memory:") {
   fs.mkdirSync(path.dirname(filename), { recursive: true });
+  if (shouldMigrateLegacy())
+    await migrateLegacyDatabase(path.join(databaseDir, "crm.sqlite"), filename);
 }
 
 const db = new Database(filename);
+if (fs.existsSync(filename) && fs.statSync(filename).size > 0)
+  validateDatabase(filename);
 db.pragma("foreign_keys = ON");
 db.exec(fs.readFileSync(path.join(databaseDir, "init.sql"), "utf8"));
 db.exec(fs.readFileSync(path.join(databaseDir, "seed.sql"), "utf8"));

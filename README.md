@@ -22,7 +22,7 @@ Na raiz do repositório, instale as dependências:
 npm install
 ```
 
-Opcionalmente copie `.env.example` para `.env.local` para definir `SQLITE_PATH`, o caminho do arquivo do banco (padrão: `./database/crm.sqlite`).
+Opcionalmente copie `.env.example` para `.env.local` para definir `SQLITE_PATH`. Sem override, o banco fica em `$XDG_DATA_HOME/crminho/crm.sqlite` ou `~/.local/share/crminho/crm.sqlite` no Linux.
 
 Inicie a aplicação:
 
@@ -34,7 +34,7 @@ Acesse [http://localhost:3000](http://localhost:3000). Na primeira conexão, o a
 
 ## Banco de dados e migrations
 
-O banco é um arquivo SQLite local (padrão `database/crm.sqlite`, configurável por `SQLITE_PATH`). O schema é criado automaticamente na primeira conexão a partir de `database/init.sql`, de forma idempotente; as chaves estrangeiras são habilitadas em cada conexão (`PRAGMA foreign_keys = ON`).
+O banco é um arquivo SQLite local no diretório de dados do usuário (configurável por `SQLITE_PATH`). O schema é criado automaticamente na primeira conexão a partir de `database/init.sql`. No Electron, escolha entre padrão, abrir existente ou criar arquivo ao iniciar. Para trocar, encerre e reabra a aplicação. Faça backup copiando o arquivo somente com o CRM encerrado (ou usando ferramenta de backup SQLite); não copie banco ativo com WAL.
 
 Para inserir os dados de demonstração (três empresas, seus contatos e oportunidades de exemplo), execute:
 
