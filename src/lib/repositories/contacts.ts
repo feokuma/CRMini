@@ -10,10 +10,10 @@ export async function listContacts(
         p.birthday, p.linkedin_url, p.notes, p.is_primary, p.client_id,
         c.company_name, c.trade_name, c.industry, c.logo_path
        FROM contacts p JOIN clients c ON c.id = p.client_id
-       WHERE (@query IS NULL OR p.full_name LIKE '%' || @query || '%'
-         OR p.email LIKE '%' || @query || '%' OR p.job_title LIKE '%' || @query || '%'
-         OR p.phone LIKE '%' || @query || '%' OR p.mobile LIKE '%' || @query || '%'
-         OR c.company_name LIKE '%' || @query || '%' OR c.trade_name LIKE '%' || @query || '%')
+       WHERE (@query IS NULL OR normalize(p.full_name) LIKE '%' || normalize(@query) || '%'
+         OR normalize(p.email) LIKE '%' || normalize(@query) || '%' OR normalize(p.job_title) LIKE '%' || normalize(@query) || '%'
+         OR normalize(p.phone) LIKE '%' || normalize(@query) || '%' OR normalize(p.mobile) LIKE '%' || normalize(@query) || '%'
+         OR normalize(c.company_name) LIKE '%' || normalize(@query) || '%' OR normalize(c.trade_name) LIKE '%' || normalize(@query) || '%')
          AND (@industry IS NULL OR c.industry = @industry)
        ORDER BY c.company_name, p.is_primary DESC, p.full_name`,
     )

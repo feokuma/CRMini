@@ -77,9 +77,9 @@ describe("createClient", () => {
     ).rejects.toThrow();
 
     expect(await listClients("Rollback")).toHaveLength(0);
-    expect(
-      getDb().prepare("SELECT COUNT(*) AS n FROM contacts").get(),
-    ).toEqual({ n: 0 });
+    expect(getDb().prepare("SELECT COUNT(*) AS n FROM contacts").get()).toEqual(
+      { n: 0 },
+    );
   });
 });
 
@@ -112,6 +112,15 @@ describe("listClients", () => {
   ])("filtra por %s", async (_label, search, expected) => {
     await createClient(baseClient);
     expect(await listClients(search)).toHaveLength(expected);
+  });
+
+  it("busca nomes sem distinção de acentos ou caixa", async () => {
+    await createClient({
+      company_name: "São Paulo Comércio",
+      contacts: [{ full_name: "José Silva" }],
+    });
+    expect(await listClients("JOSÉ")).toHaveLength(1);
+    expect(await listClients("sao paulo")).toHaveLength(1);
   });
 });
 
@@ -251,9 +260,9 @@ describe("updateClient", () => {
       contacts: [{ full_name: "Contato" }],
     });
     expect(result).toBeNull();
-    expect(
-      getDb().prepare("SELECT COUNT(*) AS n FROM contacts").get(),
-    ).toEqual({ n: 0 });
+    expect(getDb().prepare("SELECT COUNT(*) AS n FROM contacts").get()).toEqual(
+      { n: 0 },
+    );
   });
 
   it("faz rollback mantendo dados anteriores quando um contato falha", async () => {
@@ -295,8 +304,8 @@ describe("integridade referencial", () => {
 
     getDb().prepare("DELETE FROM clients WHERE id = ?").run(client.id);
 
-    expect(
-      getDb().prepare("SELECT COUNT(*) AS n FROM contacts").get(),
-    ).toEqual({ n: 0 });
+    expect(getDb().prepare("SELECT COUNT(*) AS n FROM contacts").get()).toEqual(
+      { n: 0 },
+    );
   });
 });

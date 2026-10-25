@@ -183,6 +183,27 @@ describe("updateOpportunity", () => {
 });
 
 describe("listOpportunities", () => {
+  it("busca texto ignorando acentos e caixa", async () => {
+    await createClient({
+      company_name: "São Paulo Ltda.",
+      contacts: [{ full_name: "José Silva" }],
+    }).then(async (client) => {
+      const id = (
+        getDb()
+          .prepare("SELECT id FROM contacts WHERE client_id = ?")
+          .get(client.id) as { id: string }
+      ).id;
+      await createOpportunity({
+        ...baseOpportunity(),
+        name: "Projeto São Paulo",
+        client_id: client.id,
+        contact_id: id,
+      });
+    });
+    expect(await listOpportunities("JOSÉ", null, null)).toHaveLength(1);
+    expect(await listOpportunities("sao paulo", null, null)).toHaveLength(1);
+  });
+
   it("filtra por texto, cliente e status", async () => {
     await createOpportunity(baseOpportunity());
     await createOpportunity({

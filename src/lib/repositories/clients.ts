@@ -33,8 +33,8 @@ export async function listClients(
       `SELECT c.*, COALESCE(json_group_array(json_object(${contactColumns}))
         FILTER (WHERE p.id IS NOT NULL), '[]') AS contacts
       FROM clients c LEFT JOIN contacts p ON p.client_id = c.id
-      WHERE (@search IS NULL OR c.company_name LIKE '%' || @search || '%'
-        OR p.full_name LIKE '%' || @search || '%')
+      WHERE (@search IS NULL OR normalize(c.company_name) LIKE '%' || normalize(@search) || '%'
+        OR normalize(p.full_name) LIKE '%' || normalize(@search) || '%')
       GROUP BY c.id ORDER BY c.created_at DESC`,
     )
     .all({ search }) as ClientRow[];
@@ -177,9 +177,8 @@ export async function updateClient(
     const removed = existing.filter((contact) => !keptIds.has(contact.id));
     const blocked = removed.filter(
       (contact) =>
-        (
-          countContactDependencies.get({ id: contact.id }) as { total: number }
-        ).total > 0,
+        (countContactDependencies.get({ id: contact.id }) as { total: number })
+          .total > 0,
     );
     if (blocked.length)
       throw new ClientContactsInUseError(

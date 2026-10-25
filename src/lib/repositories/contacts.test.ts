@@ -79,6 +79,19 @@ describe("listContacts", () => {
     expect(contacts.map((contact) => contact.full_name)).toEqual(expected);
   });
 
+  it("busca ignorando acentos e caixa em nomes e empresas", async () => {
+    await createClient({
+      company_name: "São Paulo Serviços",
+      contacts: [{ full_name: "José Silva" }],
+    });
+    expect(
+      (await listContacts("JOSÉ", null)).map((c) => c.full_name),
+    ).toContain("José Silva");
+    expect(
+      (await listContacts("sao paulo", null)).map((c) => c.full_name),
+    ).toContain("José Silva");
+  });
+
   it("filtra por segmento da empresa", async () => {
     const contacts = await listContacts(null, "Varejo e produtos naturais");
     expect(contacts.map((contact) => contact.full_name)).toEqual([

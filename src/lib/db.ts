@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
+import { normalizeSearch } from "@/lib/normalize-search";
 
 const databaseDir = path.join(process.cwd(), "database");
 const defaultDatabaseFile = path.join(databaseDir, "crm.sqlite");
@@ -14,6 +15,7 @@ function openDatabase(): Database.Database {
     fs.mkdirSync(path.dirname(filename), { recursive: true });
   }
   const sqlite = new Database(filename);
+  sqlite.function("normalize", normalizeSearch);
   sqlite.pragma("journal_mode = WAL");
   // O SQLite só verifica chaves estrangeiras quando habilitadas por conexão.
   sqlite.pragma("foreign_keys = ON");

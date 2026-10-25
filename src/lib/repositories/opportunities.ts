@@ -42,8 +42,8 @@ export async function listOpportunities(
       `SELECT o.*, c.company_name, p.full_name AS contact_name FROM opportunities o
       JOIN clients c ON c.id = o.client_id
       JOIN contacts p ON p.id = o.contact_id AND p.client_id = o.client_id
-      WHERE (@query IS NULL OR o.name LIKE '%' || @query || '%'
-        OR c.company_name LIKE '%' || @query || '%' OR p.full_name LIKE '%' || @query || '%')
+      WHERE (@query IS NULL OR normalize(o.name) LIKE '%' || normalize(@query) || '%'
+        OR normalize(c.company_name) LIKE '%' || normalize(@query) || '%' OR normalize(p.full_name) LIKE '%' || normalize(@query) || '%')
         AND (@clientId IS NULL OR o.client_id = @clientId)
         AND (@status IS NULL OR o.status = @status)
       ORDER BY o.created_at DESC`,
@@ -56,7 +56,8 @@ export async function createOpportunity(
 ): Promise<Record<string, any> | null> {
   const columns = fields.filter((field) => body[field] !== undefined);
   const params: Record<string, unknown> = { id: randomUUID() };
-  for (const column of columns) params[column] = normalizeField(column, body[column]);
+  for (const column of columns)
+    params[column] = normalizeField(column, body[column]);
   const row = getDb()
     .prepare(
       `INSERT INTO opportunities (id, ${columns.join(",")})
