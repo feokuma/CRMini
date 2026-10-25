@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { getDashboardMetrics } from "./dashboard-metrics";
+import {
+  getDashboardMetrics,
+  sumOpenValuesByCurrency,
+} from "./dashboard-metrics";
 
 describe("getDashboardMetrics", () => {
   it("calcula totais, taxa de conversão e valores agregados por moeda", async () => {
@@ -15,7 +18,11 @@ describe("getDashboardMetrics", () => {
             open_opportunities_count: 5,
             won_count: 2,
             lost_count: 1,
-            open_value_by_currency: { BRL: "1500.00", USD: "300.00" },
+            open_values: JSON.stringify([
+              { currency: "BRL", value: "1000.00" },
+              { currency: "BRL", value: "500.00" },
+              { currency: "USD", value: "300.00" },
+            ]),
           },
         ],
       };
@@ -30,7 +37,7 @@ describe("getDashboardMetrics", () => {
     });
     expect(receivedQuery).toContain("FROM contacts");
     expect(receivedQuery).toContain("status NOT IN ('Ganha', 'Perdida')");
-    expect(receivedQuery).toContain("GROUP BY currency");
+    expect(receivedQuery).toContain("json_group_array");
   });
 
   it("retorna conversão zero sem oportunidades encerradas", async () => {
@@ -42,7 +49,7 @@ describe("getDashboardMetrics", () => {
           open_opportunities_count: 0,
           won_count: 0,
           lost_count: 0,
-          open_value_by_currency: {},
+          open_values: "[]",
         },
       ],
     }));
@@ -65,5 +72,35 @@ describe("getDashboardMetrics", () => {
         throw new Error("banco indisponível");
       }),
     ).rejects.toThrow("banco indisponível");
+  });
+});
+
+describe("sumOpenValuesByCurrency", () => {
+  it("soma centavos inteiros sem erro de ponto flutuante", () => {
+    expect(
+      sumOpenValuesByCurrency([
+        { currency: "BRL", value: "0.10" },
+        { currency: "BRL", value: "0.20" },
+      ]),
+    ).toEqual({ BRL: "0.30" });
+  });
+
+  it("agrega por moeda, aceita inteiros e arredonda frações além de centavos", () => {
+    expect(
+      sumOpenValuesByCurrency([
+        { currency: "BRL", value: "48000" },
+        { currency: "BRL", value: "10.005" },
+        { currency: "USD", value: "300.00" },
+      ]),
+    ).toEqual({ BRL: "48010.01", USD: "300.00" });
+  });
+
+  it("ignora valores fora do formato decimal", () => {
+    expect(
+      sumOpenValuesByCurrency([
+        { currency: "BRL", value: "abc" },
+        { currency: "BRL", value: "10.00" },
+      ]),
+    ).toEqual({ BRL: "10.00" });
   });
 });

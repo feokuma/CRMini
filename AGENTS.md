@@ -2,7 +2,7 @@
 
 ## Projeto e estrutura
 
-- Este repositório contém um CRM em Next.js 15, React 19 e TypeScript, com PostgreSQL acessado via `pg`.
+- Este repositório contém um CRM em Next.js 15, React 19 e TypeScript, com SQLite local acessado via `better-sqlite3`.
 - Páginas e rotas da aplicação ficam em `src/app`; componentes compartilhados em `src/components`; lógica reutilizável em `src/lib`.
 - APIs ficam em `src/app/api`. O schema para bancos novos está em `database/init.sql`; alterações para bancos existentes são migrations manuais em `database/migrations`.
 - Antes de alterar um fluxo, leia a página/componente, a rota de API e as constraints SQL relacionadas. Não presuma que a validação da interface protege a API.
@@ -22,14 +22,15 @@
 - Valide entradas no servidor/API e mantenha a interface coerente. Use consultas SQL parametrizadas; não concatene dados recebidos do usuário em consultas.
 - Preserve a associação entre cliente e contato em todas as operações. Mudanças que atualizem múltiplos registros relacionados devem usar transação e rollback em caso de falha.
 - Em atualizações, não apague nem substitua dados existentes sem que o contrato do endpoint/formulário peça isso explicitamente. Trate campos opcionais e valores vazios de forma consistente com o fluxo existente.
-- Datas civis (`DATE`, como aniversário e abertura de oportunidade) não representam instantes e não devem sofrer conversão de fuso. Instantes (`TIMESTAMPTZ`) são persistidos pelo PostgreSQL e apresentados na interface no fuso `America/Sao_Paulo`; preserve essa distinção.
+- Datas civis (como aniversário e abertura de oportunidade) são `TEXT` no formato `YYYY-MM-DD`, não representam instantes e não devem sofrer conversão de fuso. Instantes (`created_at`, `updated_at`, `scheduled_at`) são `TEXT` ISO-8601 persistidos em UTC e apresentados na interface no fuso `America/Sao_Paulo`; preserve essa distinção.
+- Booleanos são `INTEGER` 0/1 no banco; valores monetários e horas são `TEXT` com decimal canônico (ex.: `"1234.56"`) para preservar a precisão decimal.
 - Não inclua dados pessoais reais em código, fixtures, logs ou testes. Evite expor dados desnecessários nas respostas das APIs.
 
 ## Banco de dados
 
-- Para banco novo, `database/init.sql` é aplicado na criação inicial do volume. Migrations em `database/migrations` são manuais e devem ser aplicadas na ordem numérica, uma única vez, a bancos existentes compatíveis.
+- Para banco novo, `database/init.sql` é aplicado automaticamente na abertura do banco pela conexão em `src/lib/db.ts`, que também habilita `PRAGMA foreign_keys = ON`. Migrations em `database/migrations` são manuais e devem ser aplicadas na ordem numérica, uma única vez, a bancos existentes compatíveis.
 - Antes de modificar schema ou preparar instruções de migration, confira o schema atual, migrations anteriores e os consumidores da coluna/tabela. Considere os dados existentes e faça backup antes de migrations destrutivas.
-- Não aplique comandos ao banco nem remova volumes como parte da tarefa sem autorização explícita. A remoção do volume apaga os dados locais.
+- Não aplique comandos ao banco nem remova o arquivo do banco (`database/crm.sqlite` ou `SQLITE_PATH`) como parte da tarefa sem autorização explícita. A remoção do arquivo apaga os dados locais.
 
 ## Testes e validação
 

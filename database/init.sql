@@ -1,5 +1,21 @@
+-- Schema SQLite do CRM, aplicado automaticamente na abertura do banco local
+-- (ver src/lib/db.ts). É idempotente: usa IF NOT EXISTS e pode ser reaplicado.
+--
+-- Convenções:
+-- - IDs são UUIDs em texto gerados pela aplicação (crypto.randomUUID).
+-- - Booleanos são INTEGER 0/1 (o SQLite não tem tipo booleano nativo).
+-- - Valores monetários e horas são TEXT com decimal canônico (ex.: "1234.56"),
+--   preservando a precisão decimal que o NUMERIC do PostgreSQL garantia.
+-- - Datas civis (birthday, opened_at, expected_close_at) são TEXT "YYYY-MM-DD",
+--   sem conversão de fuso.
+-- - Instantes (created_at, updated_at, scheduled_at) são TEXT ISO-8601 em UTC
+--   ("YYYY-MM-DDTHH:MM:SS.sssZ"), comparáveis lexicograficamente; a interface
+--   apresenta no fuso America/Sao_Paulo.
+-- - As chaves estrangeiras são verificadas porque cada conexão executa
+--   PRAGMA foreign_keys = ON (ver src/lib/db.ts).
+
 CREATE TABLE IF NOT EXISTS clients (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id TEXT PRIMARY KEY,
   company_name TEXT NOT NULL,
   trade_name TEXT,
   tax_id TEXT,
@@ -16,71 +32,76 @@ CREATE TABLE IF NOT EXISTS clients (
   country TEXT DEFAULT 'Brasil',
   notes TEXT,
   logo_path TEXT,
-  is_active BOOLEAN NOT NULL DEFAULT TRUE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  is_active INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0, 1)),
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
 CREATE TABLE IF NOT EXISTS contacts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+  id TEXT PRIMARY KEY,
+  client_id TEXT NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
   full_name TEXT NOT NULL,
   job_title TEXT,
   email TEXT,
   phone TEXT,
   mobile TEXT,
-  birthday DATE,
+  birthday TEXT,
   linkedin_url TEXT,
   notes TEXT,
-  is_primary BOOLEAN NOT NULL DEFAULT FALSE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  is_primary INTEGER NOT NULL DEFAULT 0 CHECK (is_primary IN (0, 1)),
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
 CREATE INDEX IF NOT EXISTS contacts_client_id_idx ON contacts(client_id);
 CREATE INDEX IF NOT EXISTS clients_company_name_idx ON clients(company_name);
 
 CREATE UNIQUE INDEX IF NOT EXISTS contacts_id_client_id_uidx ON contacts(id, client_id);
+
 CREATE TABLE IF NOT EXISTS opportunities (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
-  client_id UUID NOT NULL REFERENCES clients(id) ON DELETE RESTRICT,
-  contact_id UUID NOT NULL,
+  client_id TEXT NOT NULL REFERENCES clients(id) ON DELETE RESTRICT,
+  contact_id TEXT NOT NULL,
   technology TEXT,
-  value NUMERIC(14,2),
+  value TEXT,
   currency TEXT NOT NULL DEFAULT 'BRL' CHECK (currency IN ('BRL','USD','EUR','PES')),
   service_type TEXT,
   resources TEXT,
-  budget NUMERIC(14,2),
+  budget TEXT,
   budget_currency TEXT CHECK (budget_currency IS NULL OR budget_currency IN ('BRL','USD','EUR','PES')),
   notes TEXT,
   customer_need TEXT,
   offered_solution TEXT,
-  project_hours NUMERIC(12,2),
-  opened_at DATE NOT NULL DEFAULT CURRENT_DATE,
-  expected_close_at DATE,
+  project_hours TEXT,
+  opened_at TEXT NOT NULL DEFAULT CURRENT_DATE,
+  expected_close_at TEXT,
   status TEXT NOT NULL DEFAULT 'Em andamento' CHECK (status IN ('Em andamento','Desenvolvimento','Proposta','Aceite da proposta','Ganha','Perdida')),
   loss_reason TEXT CHECK (loss_reason IS NULL OR loss_reason IN ('Preço','Prazo','Tecnologia','Solução')),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
   CONSTRAINT opportunity_contact_client_fk FOREIGN KEY (contact_id, client_id) REFERENCES contacts(id, client_id) ON DELETE RESTRICT,
   CONSTRAINT opportunity_loss_reason_check CHECK ((status = 'Perdida' AND loss_reason IS NOT NULL) OR (status <> 'Perdida' AND loss_reason IS NULL)),
-  CONSTRAINT opportunity_nonnegative_values CHECK ((value IS NULL OR value >= 0) AND (budget IS NULL OR budget >= 0) AND (project_hours IS NULL OR project_hours >= 0))
+  CONSTRAINT opportunity_nonnegative_values CHECK (
+    (value IS NULL OR (value GLOB '[0-9]*' AND CAST(value AS REAL) >= 0)) AND
+    (budget IS NULL OR (budget GLOB '[0-9]*' AND CAST(budget AS REAL) >= 0)) AND
+    (project_hours IS NULL OR (project_hours GLOB '[0-9]*' AND CAST(project_hours AS REAL) >= 0))
+  )
 );
 CREATE INDEX IF NOT EXISTS opportunities_client_id_idx ON opportunities(client_id);
 CREATE INDEX IF NOT EXISTS opportunities_status_idx ON opportunities(status);
 
 CREATE TABLE IF NOT EXISTS tasks (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id TEXT PRIMARY KEY,
   contact_type TEXT NOT NULL CHECK (contact_type IN ('email','telefone','compromisso')),
   subject TEXT NOT NULL CHECK (length(trim(subject)) > 0),
   description TEXT,
-  scheduled_at TIMESTAMPTZ NOT NULL,
+  scheduled_at TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'Aberto' CHECK (status IN ('Aberto','Concluído')),
-  client_id UUID NOT NULL REFERENCES clients(id) ON DELETE RESTRICT,
-  contact_id UUID NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  client_id TEXT NOT NULL REFERENCES clients(id) ON DELETE RESTRICT,
+  contact_id TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
   CONSTRAINT task_contact_client_fk FOREIGN KEY (contact_id, client_id) REFERENCES contacts(id, client_id) ON DELETE RESTRICT
 );
 CREATE INDEX IF NOT EXISTS tasks_scheduled_at_idx ON tasks(scheduled_at);

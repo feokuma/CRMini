@@ -18,13 +18,13 @@ export async function PATCH(
     return NextResponse.json({ error: "Status inválido." }, { status: 400 });
   const { id } = await params;
   try {
-    const result = await updateTaskStatus(id, body.status);
-    if (!result.rowCount)
+    const updated = await updateTaskStatus(id, body.status);
+    if (!updated)
       return NextResponse.json(
         { error: "Tarefa não encontrada." },
         { status: 404 },
       );
-    return NextResponse.json(result.rows[0]);
+    return NextResponse.json(updated);
   } catch {
     return NextResponse.json(
       { error: "Não foi possível atualizar a tarefa." },

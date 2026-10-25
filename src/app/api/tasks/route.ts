@@ -39,13 +39,13 @@ export async function POST(request: NextRequest) {
   const error = validateTask(body);
   if (error) return NextResponse.json({ error }, { status: 400 });
   try {
-    const result = await createTask(body);
-    if (!result.rowCount)
+    const created = await createTask(body);
+    if (!created)
       return NextResponse.json(
         { error: "Cliente ativo ou contato válido não encontrado." },
         { status: 400 },
       );
-    return NextResponse.json(result.rows[0], { status: 201 });
+    return NextResponse.json(created, { status: 201 });
   } catch {
     return NextResponse.json(
       { error: "Não foi possível cadastrar a tarefa." },

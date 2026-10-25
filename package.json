@@ -12,20 +12,18 @@
     "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,css,md,yml,yaml,mjs,cjs,mts}\"",
     "test": "vitest run",
     "test:components": "vitest run",
-    "db:up": "docker compose up -d",
-    "db:down": "docker compose down",
-    "db:seed": "docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U reply_crm -d reply_crm -f - < database/seed.sql"
+    "db:seed": "node database/seed.mjs"
   },
   "dependencies": {
-    "@types/pg": "^8.23.1",
+    "better-sqlite3": "^13.0.3",
     "next": "^15.3.0",
-    "pg": "^8.23.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
+    "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

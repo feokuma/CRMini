@@ -11,7 +11,7 @@ export interface RecentOpportunity {
 
 type RecentOpportunitiesQuery = (
   statement: string,
-) => Promise<{ rows: RecentOpportunity[] }>;
+) => { rows: RecentOpportunity[] } | Promise<{ rows: RecentOpportunity[] }>;
 
 const recentOpportunitiesQuery = `SELECT o.id, o.name, c.company_name, p.full_name AS contact_name, o.status, o.value, o.currency, o.updated_at
   FROM opportunities o JOIN clients c ON c.id=o.client_id

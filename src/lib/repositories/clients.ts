@@ -1,154 +1,246 @@
-import { pool } from "@/lib/db";
+import { randomUUID } from "node:crypto";
+import { getDb } from "@/lib/db";
 
-export async function listClients(search: string | null) {
-  const { rows } = await pool.query(
-    `SELECT c.*, COALESCE(json_agg(json_build_object(
-      'id', p.id, 'full_name', p.full_name, 'job_title', p.job_title,
-      'email', p.email, 'phone', p.phone, 'mobile', p.mobile,
-      'birthday', p.birthday, 'linkedin_url', p.linkedin_url,
-      'notes', p.notes, 'is_primary', p.is_primary
-    )) FILTER (WHERE p.id IS NOT NULL), '[]') AS contacts
-    FROM clients c LEFT JOIN contacts p ON p.client_id = c.id
-    WHERE ($1::text IS NULL OR c.company_name ILIKE '%' || $1 || '%' OR p.full_name ILIKE '%' || $1 || '%')
-    GROUP BY c.id ORDER BY c.created_at DESC`,
-    [search],
-  );
-  return rows;
+const contactColumns = `
+  'id', p.id, 'client_id', p.client_id, 'full_name', p.full_name,
+  'job_title', p.job_title, 'email', p.email, 'phone', p.phone,
+  'mobile', p.mobile, 'birthday', p.birthday, 'linkedin_url', p.linkedin_url,
+  'notes', p.notes, 'is_primary', p.is_primary,
+  'created_at', p.created_at, 'updated_at', p.updated_at`;
+
+interface ClientRow extends Record<string, any> {
+  is_active: number;
+  contacts: string;
 }
 
-export async function createClient(body: Record<string, any>) {
-  const db = await pool.connect();
-  try {
-    await db.query("BEGIN");
-    const {
-      rows: [client],
-    } = await db.query(
-      `INSERT INTO clients (company_name, trade_name, tax_id, industry, website, phone, email,
-       postal_code, street, street_number, complement, city, state, country, notes, logo_path)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
-      [
-        body.company_name.trim(),
-        body.trade_name,
-        body.tax_id,
-        body.industry,
-        body.website,
-        body.phone,
-        body.email,
-        body.postal_code,
-        body.street,
-        body.street_number,
-        body.complement,
-        body.city,
-        body.state,
-        body.country || "Brasil",
-        body.notes,
-        body.logo_path,
-      ],
-    );
-    for (const contact of body.contacts || []) {
+function mapClientRow(row: ClientRow): Record<string, any> {
+  const contacts = JSON.parse(row.contacts || "[]") as Record<string, any>[];
+  return {
+    ...row,
+    is_active: Boolean(row.is_active),
+    contacts: contacts.map((contact) => ({
+      ...contact,
+      is_primary: Boolean(contact.is_primary),
+    })),
+  };
+}
+
+export async function listClients(
+  search: string | null,
+): Promise<Record<string, any>[]> {
+  const rows = getDb()
+    .prepare(
+      `SELECT c.*, COALESCE(json_group_array(json_object(${contactColumns}))
+        FILTER (WHERE p.id IS NOT NULL), '[]') AS contacts
+      FROM clients c LEFT JOIN contacts p ON p.client_id = c.id
+      WHERE (@search IS NULL OR c.company_name LIKE '%' || @search || '%'
+        OR p.full_name LIKE '%' || @search || '%')
+      GROUP BY c.id ORDER BY c.created_at DESC`,
+    )
+    .all({ search }) as ClientRow[];
+  return rows.map(mapClientRow);
+}
+
+export async function createClient(
+  body: Record<string, any>,
+): Promise<Record<string, any>> {
+  const db = getDb();
+  const insertClient = db.prepare(
+    `INSERT INTO clients (id, company_name, trade_name, tax_id, industry, website, phone, email,
+     postal_code, street, street_number, complement, city, state, country, notes, logo_path)
+     VALUES (@id, @company_name, @trade_name, @tax_id, @industry, @website, @phone, @email,
+     @postal_code, @street, @street_number, @complement, @city, @state, @country, @notes, @logo_path)
+     RETURNING *`,
+  );
+  const insertContact = db.prepare(
+    `INSERT INTO contacts (id, client_id, full_name, job_title, email, phone, mobile, birthday, linkedin_url, notes, is_primary)
+     VALUES (@id, @client_id, @full_name, @job_title, @email, @phone, @mobile, @birthday, @linkedin_url, @notes, @is_primary)`,
+  );
+  const run = db.transaction((input: Record<string, any>) => {
+    const client = insertClient.get({
+      id: randomUUID(),
+      company_name: input.company_name.trim(),
+      trade_name: input.trade_name,
+      tax_id: input.tax_id,
+      industry: input.industry,
+      website: input.website,
+      phone: input.phone,
+      email: input.email,
+      postal_code: input.postal_code,
+      street: input.street,
+      street_number: input.street_number,
+      complement: input.complement,
+      city: input.city,
+      state: input.state,
+      country: input.country || "Brasil",
+      notes: input.notes,
+      logo_path: input.logo_path,
+    }) as Record<string, any>;
+    for (const contact of input.contacts || []) {
       if (!contact.full_name?.trim()) continue;
-      await db.query(
-        `INSERT INTO contacts (client_id, full_name, job_title, email, phone, mobile, birthday, linkedin_url, notes, is_primary)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-        [
-          client.id,
-          contact.full_name.trim(),
-          contact.job_title,
-          contact.email,
-          contact.phone,
-          contact.mobile,
-          contact.birthday || null,
-          contact.linkedin_url,
-          contact.notes,
-          Boolean(contact.is_primary),
-        ],
-      );
+      insertContact.run({
+        id: randomUUID(),
+        client_id: client.id,
+        full_name: contact.full_name.trim(),
+        job_title: contact.job_title,
+        email: contact.email,
+        phone: contact.phone,
+        mobile: contact.mobile,
+        birthday: contact.birthday || null,
+        linkedin_url: contact.linkedin_url,
+        notes: contact.notes,
+        is_primary: contact.is_primary ? 1 : 0,
+      });
     }
-    await db.query("COMMIT");
     return client;
-  } catch (error) {
-    await db.query("ROLLBACK");
-    throw error;
-  } finally {
-    db.release();
-  }
+  });
+  const client = run(body) as Record<string, any>;
+  return { ...client, is_active: Boolean(client.is_active) };
 }
 
-export async function getClient(id: string) {
-  const { rows, rowCount } = await pool.query(
-    `SELECT c.*, COALESCE(json_agg(to_jsonb(p)) FILTER (WHERE p.id IS NOT NULL), '[]') AS contacts
-    FROM clients c LEFT JOIN contacts p ON p.client_id=c.id WHERE c.id=$1 GROUP BY c.id`,
-    [id],
-  );
-  return { client: rows[0], found: Boolean(rowCount) };
+export async function getClient(
+  id: string,
+): Promise<{ client: Record<string, any> | undefined; found: boolean }> {
+  const row = getDb()
+    .prepare(
+      `SELECT c.*, COALESCE(json_group_array(json_object(${contactColumns}))
+        FILTER (WHERE p.id IS NOT NULL), '[]') AS contacts
+      FROM clients c LEFT JOIN contacts p ON p.client_id = c.id
+      WHERE c.id = @id GROUP BY c.id`,
+    )
+    .get({ id }) as ClientRow | undefined;
+  return { client: row ? mapClientRow(row) : undefined, found: Boolean(row) };
 }
 
-export async function updateClient(id: string, body: Record<string, any>) {
-  const db = await pool.connect();
-  try {
-    await db.query("BEGIN");
-    const result = await db.query(
-      `UPDATE clients SET company_name=$2, trade_name=$3, tax_id=$4, industry=$5,
-      website=$6, phone=$7, email=$8, postal_code=$9, street=$10, street_number=$11, complement=$12,
-      city=$13, state=$14, country=$15, notes=$16, logo_path=$17, updated_at=NOW() WHERE id=$1 RETURNING *`,
-      [
-        id,
-        body.company_name.trim(),
-        body.trade_name,
-        body.tax_id,
-        body.industry,
-        body.website,
-        body.phone,
-        body.email,
-        body.postal_code,
-        body.street,
-        body.street_number,
-        body.complement,
-        body.city,
-        body.state,
-        body.country || "Brasil",
-        body.notes,
-        body.logo_path,
-      ],
+export class ClientContactsInUseError extends Error {
+  constructor(contactNames: string[]) {
+    super(
+      `Não é possível remover contatos com tarefas ou oportunidades vinculadas: ${contactNames.join(", ")}.`,
     );
-    if (!result.rowCount) {
-      await db.query("ROLLBACK");
-      return null;
-    }
-    await db.query("DELETE FROM contacts WHERE client_id=$1", [id]);
-    for (const contact of body.contacts || []) {
-      if (!contact.full_name?.trim()) continue;
-      await db.query(
-        `INSERT INTO contacts (client_id,full_name,job_title,email,phone,mobile,birthday,linkedin_url,notes,is_primary)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-        [
-          id,
-          contact.full_name.trim(),
-          contact.job_title,
-          contact.email,
-          contact.phone,
-          contact.mobile,
-          contact.birthday || null,
-          contact.linkedin_url,
-          contact.notes,
-          Boolean(contact.is_primary),
-        ],
-      );
-    }
-    await db.query("COMMIT");
-    return result.rows[0];
-  } catch (error) {
-    await db.query("ROLLBACK");
-    throw error;
-  } finally {
-    db.release();
+    this.name = "ClientContactsInUseError";
   }
 }
 
-export async function deactivateClient(id: string) {
-  const { rows, rowCount } = await pool.query(
-    "UPDATE clients SET is_active=FALSE, updated_at=NOW() WHERE id=$1 RETURNING id",
-    [id],
+export async function updateClient(
+  id: string,
+  body: Record<string, any>,
+): Promise<Record<string, any> | null> {
+  const db = getDb();
+  const updateStmt = db.prepare(
+    `UPDATE clients SET company_name=@company_name, trade_name=@trade_name, tax_id=@tax_id,
+     industry=@industry, website=@website, phone=@phone, email=@email, postal_code=@postal_code,
+     street=@street, street_number=@street_number, complement=@complement, city=@city, state=@state,
+     country=@country, notes=@notes, logo_path=@logo_path,
+     updated_at=strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+     WHERE id=@id RETURNING *`,
   );
-  return { found: Boolean(rowCount), row: rows[0] };
+  const insertContact = db.prepare(
+    `INSERT INTO contacts (id, client_id, full_name, job_title, email, phone, mobile, birthday, linkedin_url, notes, is_primary)
+     VALUES (@id, @client_id, @full_name, @job_title, @email, @phone, @mobile, @birthday, @linkedin_url, @notes, @is_primary)`,
+  );
+  const updateContact = db.prepare(
+    `UPDATE contacts SET full_name=@full_name, job_title=@job_title, email=@email, phone=@phone,
+     mobile=@mobile, birthday=@birthday, linkedin_url=@linkedin_url, notes=@notes, is_primary=@is_primary,
+     updated_at=strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+     WHERE id=@id AND client_id=@client_id`,
+  );
+  const deleteContact = db.prepare(
+    "DELETE FROM contacts WHERE id = @id AND client_id = @client_id",
+  );
+  const listExistingContacts = db.prepare(
+    "SELECT id, full_name FROM contacts WHERE client_id = @client_id",
+  );
+  const countContactDependencies = db.prepare(
+    `SELECT (SELECT COUNT(*) FROM tasks WHERE contact_id = @id)
+      + (SELECT COUNT(*) FROM opportunities WHERE contact_id = @id) AS total`,
+  );
+  const run = db.transaction((input: Record<string, any>) => {
+    const existing = listExistingContacts.all({ client_id: id }) as {
+      id: string;
+      full_name: string;
+    }[];
+    const existingIds = new Set(existing.map((contact) => contact.id));
+    const contacts = (input.contacts || []).filter((contact: any) =>
+      contact.full_name?.trim(),
+    );
+    for (const contact of contacts) {
+      if (contact.id && !existingIds.has(contact.id))
+        throw new Error("Contato não pertence ao cliente informado.");
+    }
+    const keptIds = new Set(
+      contacts
+        .map((contact: any) => contact.id)
+        .filter((contactId: string | undefined): contactId is string =>
+          Boolean(contactId),
+        ),
+    );
+    const removed = existing.filter((contact) => !keptIds.has(contact.id));
+    const blocked = removed.filter(
+      (contact) =>
+        (
+          countContactDependencies.get({ id: contact.id }) as { total: number }
+        ).total > 0,
+    );
+    if (blocked.length)
+      throw new ClientContactsInUseError(
+        blocked.map((contact) => contact.full_name),
+      );
+
+    const updated = updateStmt.get({
+      id,
+      company_name: input.company_name.trim(),
+      trade_name: input.trade_name,
+      tax_id: input.tax_id,
+      industry: input.industry,
+      website: input.website,
+      phone: input.phone,
+      email: input.email,
+      postal_code: input.postal_code,
+      street: input.street,
+      street_number: input.street_number,
+      complement: input.complement,
+      city: input.city,
+      state: input.state,
+      country: input.country || "Brasil",
+      notes: input.notes,
+      logo_path: input.logo_path,
+    }) as Record<string, any> | undefined;
+    if (!updated) return null;
+    for (const contact of contacts) {
+      const values = {
+        full_name: contact.full_name.trim(),
+        job_title: contact.job_title,
+        email: contact.email,
+        phone: contact.phone,
+        mobile: contact.mobile,
+        birthday: contact.birthday || null,
+        linkedin_url: contact.linkedin_url,
+        notes: contact.notes,
+        is_primary: contact.is_primary ? 1 : 0,
+      };
+      if (contact.id) {
+        updateContact.run({ ...values, id: contact.id, client_id: id });
+      } else {
+        insertContact.run({ ...values, id: randomUUID(), client_id: id });
+      }
+    }
+    for (const contact of removed) {
+      deleteContact.run({ id: contact.id, client_id: id });
+    }
+    return updated;
+  });
+  const updated = run(body) as Record<string, any> | null;
+  return updated ? { ...updated, is_active: Boolean(updated.is_active) } : null;
+}
+
+export async function deactivateClient(
+  id: string,
+): Promise<{ found: boolean; row: unknown }> {
+  const row = getDb()
+    .prepare(
+      `UPDATE clients SET is_active = 0, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+       WHERE id = @id RETURNING id`,
+    )
+    .get({ id });
+  return { found: Boolean(row), row };
 }

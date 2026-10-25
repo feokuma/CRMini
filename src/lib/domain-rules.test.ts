@@ -6,7 +6,10 @@ import {
   formatBrazilDate,
   formatBrazilDateTime,
 } from "./project-time";
-import { getRecentOpportunities } from "./recent-opportunities";
+import {
+  getRecentOpportunities,
+  type RecentOpportunity,
+} from "./recent-opportunities";
 import { saoPauloDayRange } from "./task-date";
 import { validateTask } from "./task-validation";
 
@@ -85,7 +88,7 @@ describe("saudação e métricas do painel", () => {
   });
 
   it("agrega conversão sobre oportunidades encerradas e valores por moeda", async () => {
-    const query = vi.fn(async () => ({
+    const query = vi.fn(async (_statement: string) => ({
       rows: [
         {
           contacts_count: 10,
@@ -93,7 +96,7 @@ describe("saudação e métricas do painel", () => {
           open_opportunities_count: 5,
           won_count: 2,
           lost_count: 1,
-          open_value_by_currency: { BRL: "1500.00" },
+          open_values: JSON.stringify([{ currency: "BRL", value: "1500.00" }]),
         },
       ],
     }));
@@ -103,7 +106,8 @@ describe("saudação e métricas do painel", () => {
       conversionRate: 67,
       openValueByCurrency: { BRL: "1500.00" },
     });
-    expect(query.mock.calls[0][0]).toMatch(/GROUP BY currency/);
+    expect(query.mock.calls[0][0]).toMatch(/json_group_array/);
+    expect(query.mock.calls[0][0]).toMatch(/status NOT IN \('Ganha', 'Perdida'\)/);
   });
 
   it("propaga falhas de consulta ao painel", async () => {
@@ -117,10 +121,12 @@ describe("saudação e métricas do painel", () => {
 
 describe("oportunidades recentes", () => {
   it("consulta os campos da oportunidade em ordem recente e devolve linhas", async () => {
-    const rows = [{ id: "op-1", title: "Projeto", status: "Proposta" }];
-    const query = vi.fn(async () => ({ rows }));
+    const rows = [
+      { id: "op-1", title: "Projeto", status: "Proposta" },
+    ] as unknown as RecentOpportunity[];
+    const query = vi.fn(async (_statement: string) => ({ rows }));
     await expect(getRecentOpportunities(query)).resolves.toEqual(rows);
-    expect(query.mock.calls[0][0]).toMatch(/ORDER BY.*created_at DESC/is);
+    expect(query.mock.calls[0][0]).toMatch(/ORDER BY.*created_at DESC/i);
     expect(query.mock.calls[0][0]).toMatch(/LIMIT/);
   });
 

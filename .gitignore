@@ -8,3 +8,6 @@ build/
 !.env.example
 tmp/assets/*
 !tmp/assets/.gitkeep
+database/*.sqlite
+database/*.sqlite-shm
+database/*.sqlite-wal

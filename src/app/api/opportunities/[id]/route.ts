@@ -39,12 +39,12 @@ export async function PATCH(
     );
   try {
     const { id } = await params;
-    const result = await changeOpportunityStatus(
+    const updated = await changeOpportunityStatus(
       id,
       body.status!,
       body.loss_reason || null,
     );
-    if (!result.rowCount)
+    if (!updated)
       return NextResponse.json(
         { error: "Oportunidade não encontrada." },
         { status: 404 },
@@ -117,13 +117,13 @@ export async function PUT(
   )
     return NextResponse.json({ error: "Moeda inválida." }, { status: 400 });
   try {
-    const result = await updateOpportunity(id, body);
-    if (!result.rowCount)
+    const updated = await updateOpportunity(id, body);
+    if (!updated)
       return NextResponse.json(
         { error: "Oportunidade ou associação válida não encontrada." },
         { status: 404 },
       );
-    return NextResponse.json(result.rows[0]);
+    return NextResponse.json(updated);
   } catch {
     return NextResponse.json(
       { error: "Não foi possível atualizar a oportunidade." },

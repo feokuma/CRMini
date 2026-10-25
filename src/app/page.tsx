@@ -1,11 +1,14 @@
 import Breadcrumbs from "@/components/breadcrumbs";
 import Link from "next/link";
-import { pool } from "@/lib/db";
+import { getDb } from "@/lib/db";
 import {
   getRecentOpportunities,
   type RecentOpportunity,
 } from "@/lib/recent-opportunities";
-import { getDashboardMetrics } from "@/lib/dashboard-metrics";
+import {
+  getDashboardMetrics,
+  type DashboardMetricRow,
+} from "@/lib/dashboard-metrics";
 import { getDashboardDate, getGreeting } from "@/lib/greeting";
 
 const avatarColors = ["peach", "blue", "green", "lilac"];
@@ -20,9 +23,14 @@ export default async function Home() {
     openValueByCurrency: {} as Record<string, string | number>,
   };
   try {
+    const db = getDb();
     [opportunities, stats] = await Promise.all([
-      getRecentOpportunities((sql) => pool.query(sql)),
-      getDashboardMetrics((sql) => pool.query(sql)),
+      getRecentOpportunities((sql) => ({
+        rows: db.prepare(sql).all() as RecentOpportunity[],
+      })),
+      getDashboardMetrics((sql) => ({
+        rows: [db.prepare(sql).get() as DashboardMetricRow],
+      })),
     ]);
   } catch {
     // A página permanece acessível se o banco estiver temporariamente indisponível.

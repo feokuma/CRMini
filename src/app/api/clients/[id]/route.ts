@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
+  ClientContactsInUseError,
   deactivateClient,
   getClient,
   updateClient,
@@ -48,6 +49,8 @@ export async function PUT(
       );
     return NextResponse.json(result);
   } catch (error) {
+    if (error instanceof ClientContactsInUseError)
+      return NextResponse.json({ error: error.message }, { status: 409 });
     console.error("Failed to update client", error);
     return NextResponse.json(
       { error: "Não foi possível atualizar o cliente." },
