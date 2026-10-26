@@ -18,7 +18,7 @@ O Electron inicia `next dev`; alterações no código são refletidas sem gerar 
 2. Gere a versão de produção com `npm run build`.
 3. Execute `npm run desktop`.
 
-O servidor fica limitado a `127.0.0.1:3174`. Esta PoC inicia e encerra o Next.js junto da janela. Ao iniciar, escolha usar o banco padrão (`app.getPath('userData')/crm.sqlite`), abrir banco existente ou criar/selecionar um arquivo. Arquivos não vazios precisam conter as tabelas do CRM; arquivos novos recebem o schema automaticamente. Para trocar o banco, encerre e reabra o aplicativo. O banco antigo `database/crm.sqlite` é copiado por backup SQLite para o padrão apenas se ele ainda não existir; a origem é preservada. Para backup, encerre o app antes de copiar o arquivo, ou use a API SQLite de backup.
+O servidor fica limitado a `127.0.0.1:3174`. Esta PoC inicia e encerra o Next.js junto da janela. Na primeira inicialização, escolha o banco padrão (`app.getPath('userData')/crm.sqlite`), abrir banco existente ou criar/selecionar arquivo; a escolha é persistida em `userData/preferences.json`. A sidebar Configurações permite trocar o caminho e reinicia o app após confirmação do seletor nativo. O banco anterior nunca é movido ou apagado. Se o caminho persistido não estiver disponível ou for inválido, o app informa o problema e oferece seletor explícito de recuperação; cancelar encerra o app preservando a preferência e sem criar arquivo vazio. Para backup, encerre o app antes de copiar o arquivo, ou use a API SQLite de backup.
 
 ## Limitações / próximos passos
 

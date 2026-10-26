@@ -21,18 +21,21 @@ vi.mock("next/link", () => ({
 
 import AppSidebar from "./app-sidebar";
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  delete window.crmDesktop;
+});
 
 describe("Menu lateral", () => {
-  it("exibe a marca Mini CRM mantendo o ícone da marca", () => {
+  it("exibe a marca CRMini mantendo o ícone da marca", () => {
     render(<AppSidebar />);
 
-    expect(screen.getByRole("link", { name: "Mini CRM" })).toBeInTheDocument();
-    expect(screen.getByText("Mini")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "CRMini" })).toBeInTheDocument();
+    expect(screen.getByText("ini")).toBeInTheDocument();
     expect(screen.getByText("CRM")).toBeInTheDocument();
-    expect(screen.getByAltText("Reply CRM")).toHaveAttribute(
+    expect(screen.getByAltText("CRMini")).toHaveAttribute(
       "src",
-      expect.stringContaining("reply-favicon.ico"),
+      expect.stringContaining("crmini-symbol.svg"),
     );
   });
 
@@ -105,5 +108,27 @@ describe("Menu lateral", () => {
       "aria-hidden",
       "true",
     );
+  });
+
+  it("não exibe Configurações quando a ponte desktop não está disponível", () => {
+    render(<AppSidebar />);
+
+    expect(
+      screen.queryByRole("link", { name: "Configurações" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("exibe Configurações somente no desktop e marca a rota ativa", () => {
+    pathname.current = "/configuracoes";
+    window.crmDesktop = {
+      getDatabasePath: vi.fn(),
+      chooseDatabase: vi.fn(),
+    };
+
+    render(<AppSidebar />);
+
+    const settingsLink = screen.getByRole("link", { name: "Configurações" });
+    expect(settingsLink).toHaveAttribute("href", "/configuracoes");
+    expect(settingsLink).toHaveAttribute("aria-current", "page");
   });
 });

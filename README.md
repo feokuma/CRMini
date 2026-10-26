@@ -1,4 +1,4 @@
-# Reply CRM
+# CRMini
 
 Aplicação web de CRM para organizar empresas clientes, contatos, oportunidades e tarefas. Os dados são persistidos em um arquivo SQLite local; a interface permite acompanhar informações e atividades comerciais em um só lugar.
 
@@ -53,7 +53,7 @@ O comando `npm run desktop` inicia `next start` e não gera um build. Portanto, 
 
 ## Banco de dados e migrations
 
-O banco é um arquivo SQLite local no diretório de dados do usuário (configurável por `SQLITE_PATH`). O schema é criado automaticamente na primeira conexão a partir de `database/init.sql`. No Electron, escolha entre padrão, abrir existente ou criar arquivo ao iniciar. Para trocar, encerre e reabra a aplicação. Faça backup copiando o arquivo somente com o CRM encerrado (ou usando ferramenta de backup SQLite); não copie banco ativo com WAL.
+O banco é um arquivo SQLite local no diretório de dados do usuário (configurável por `SQLITE_PATH`). O schema é criado automaticamente na primeira conexão a partir de `database/init.sql`. No Electron, a escolha ocorre apenas na primeira inicialização e fica salva nas preferências do usuário. Use Configurações para escolher outro banco; o app reinicia para abrir o novo caminho, sem mover ou apagar o anterior. Se o caminho salvo não estiver disponível ou for inválido, o app informa o problema e oferece seletor explícito de recuperação; cancelar encerra o app preservando a preferência e sem criar banco vazio.
 
 Para inserir os dados de demonstração (três empresas, seus contatos e oportunidades de exemplo), execute:
 
