@@ -972,6 +972,13 @@ main.records-page .form-section {
   padding: clamp(16px, 2.4vw, 26px);
   box-shadow: 0 2px 8px #18241608;
 }
+main.records-page .form-section > h2 {
+  margin: 0 0 22px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #edf0eb;
+  color: #263328;
+  font: 700 16px Manrope, sans-serif;
+}
 main.records-page .form-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: start;
@@ -995,6 +1002,44 @@ main.records-page .form-field input {
     border-color 0.15s,
     box-shadow 0.15s;
 }
+main.records-page .form-field textarea {
+  display: block;
+  min-width: 0;
+  width: 100%;
+  min-height: 104px;
+  resize: vertical;
+  border: 1px solid #dfe4dd;
+  border-radius: 5px;
+  padding: 10px 12px;
+  color: #222;
+  background: #fff;
+  font: 13px/1.5 "DM Sans", sans-serif;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+main.records-page .form-field input[type="date"] {
+  padding-right: 10px;
+}
+main.records-page .form-grid > .form-field:has(textarea) {
+  grid-column: 1 / -1;
+}
+main.records-page .client-form > .primary-button {
+  align-self: flex-end;
+  min-width: 176px;
+}
+main.records-page .contact-primary-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+main.records-page .contact-primary-checkbox input[type="checkbox"] {
+  display: inline-block;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--accent);
+}
 main.records-page .form-field select {
   display: block;
   min-width: 0;
@@ -1014,6 +1059,7 @@ main.records-page .form-field select {
 }
 main.records-page .form-field input:focus,
 main.records-page .form-field select:focus,
+main.records-page .form-field textarea:focus,
 .records-toolbar input:focus,
 .notes-input:focus {
   border-color: var(--accent);
@@ -1126,6 +1172,12 @@ main.records-page .company-logo img {
   }
   main.records-page .form-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+  main.records-page .form-grid > .form-field:has(textarea) {
+    grid-column: auto;
+  }
+  main.records-page .client-form > .primary-button {
+    width: 100%;
   }
   main.records-page .form-section-heading {
     flex-wrap: wrap;

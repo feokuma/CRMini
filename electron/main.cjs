@@ -8,11 +8,13 @@ const {
   selectDatabasePath,
   shouldMigrateLegacy,
 } = require("../database/sqlite-paths.cjs");
+const { getNextCommand } = require("./next-command.cjs");
 const http = require("node:http");
 const path = require("node:path");
 
 const host = "127.0.0.1";
 const port = 3174;
+const isDevelopment = process.argv.includes("--dev");
 let nextProcess;
 let mainWindow;
 
@@ -96,7 +98,7 @@ async function createWindow() {
   }
   nextProcess = spawn(
     "npm",
-    ["run", "start", "--", "--hostname", host, "--port", String(port)],
+    getNextCommand(isDevelopment, host, port),
     {
       cwd: projectDir,
       stdio: "inherit",

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listContacts } from "@/lib/repositories/contacts";
+import { createContact, listContacts } from "@/lib/repositories/contacts";
 
 export const runtime = "nodejs";
 
@@ -14,5 +14,27 @@ export async function GET(request: NextRequest) {
       { error: "Não foi possível carregar os contatos." },
       { status: 503 },
     );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  let body: Record<string, any>;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Dados inválidos." }, { status: 400 });
+  }
+  if (typeof body.full_name !== "string" || !body.full_name.trim())
+    return NextResponse.json({ error: "Informe o nome do contato." }, { status: 400 });
+  if (typeof body.client_id !== "string" || !body.client_id.trim())
+    return NextResponse.json({ error: "Selecione um cliente." }, { status: 400 });
+  try {
+    const contact = await createContact(body);
+    if (!contact)
+      return NextResponse.json({ error: "Cliente não encontrado ou inativo." }, { status: 404 });
+    return NextResponse.json(contact, { status: 201 });
+  } catch (error) {
+    console.error("Failed to create contact", error);
+    return NextResponse.json({ error: "Não foi possível cadastrar o contato." }, { status: 500 });
   }
 }

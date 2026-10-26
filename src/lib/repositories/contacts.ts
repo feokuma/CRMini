@@ -1,4 +1,23 @@
 import { getDb } from "@/lib/db";
+import { randomUUID } from "node:crypto";
+
+export async function createContact(input: Record<string, any>) {
+  const result = getDb()
+    .prepare(
+      `INSERT INTO contacts (id, client_id, full_name, job_title, email, phone, mobile, birthday, linkedin_url, notes, is_primary)
+       SELECT @id, c.id, @full_name, @job_title, @email, @phone, @mobile, @birthday, @linkedin_url, @notes, @is_primary
+       FROM clients c WHERE c.id = @client_id AND c.is_active = 1
+       RETURNING *`,
+    )
+    .get({
+      id: randomUUID(), client_id: input.client_id, full_name: input.full_name.trim(),
+      job_title: input.job_title || null, email: input.email || null,
+      phone: input.phone || null, mobile: input.mobile || null,
+      birthday: input.birthday || null, linkedin_url: input.linkedin_url || null,
+      notes: input.notes || null, is_primary: input.is_primary ? 1 : 0,
+    });
+  return result;
+}
 
 export async function listContacts(
   query: string | null,

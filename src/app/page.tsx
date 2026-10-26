@@ -51,9 +51,9 @@ export default async function Home() {
               Aqui está o resumo do que acontece no seu espaço.
             </p>
           </div>
-          <button className="primary-button">
+          <Link className="primary-button" href="/contatos/novo">
             <span>＋</span> Novo contato
-          </button>
+          </Link>
         </header>
         <div className="dashboard-content">
           <div className="metric-grid">

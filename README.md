@@ -32,6 +32,25 @@ npm run dev
 
 Acesse [http://localhost:3000](http://localhost:3000). Na primeira conexão, o arquivo do banco é criado e o schema de `database/init.sql` é aplicado automaticamente, sem etapa manual.
 
+## Executar no Electron
+
+Para desenvolver na janela desktop, use:
+
+```bash
+npm run desktop:dev
+```
+
+Esse comando inicia o Electron com `next dev`. Alterações no código do Next.js são atualizadas automaticamente, sem executar `npm run build`. Encerre outras instâncias do CRM antes de iniciar, pois o app usa a porta `3174`.
+
+Para executar o servidor de produção dentro do Electron:
+
+```bash
+npm run build
+npm run desktop
+```
+
+O comando `npm run desktop` inicia `next start` e não gera um build. Portanto, depois de alterar o Next.js, execute `npm run build` novamente antes de abrir a versão de produção. Alterações no código do Electron exigem reiniciar o aplicativo. Veja também [electron/README.md](./electron/README.md).
+
 ## Banco de dados e migrations
 
 O banco é um arquivo SQLite local no diretório de dados do usuário (configurável por `SQLITE_PATH`). O schema é criado automaticamente na primeira conexão a partir de `database/init.sql`. No Electron, escolha entre padrão, abrir existente ou criar arquivo ao iniciar. Para trocar, encerre e reabra a aplicação. Faça backup copiando o arquivo somente com o CRM encerrado (ou usando ferramenta de backup SQLite); não copie banco ativo com WAL.

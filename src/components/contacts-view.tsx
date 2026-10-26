@@ -61,8 +61,8 @@ export default function ContactsView() {
             Pessoas e informações de contato dos seus clientes.
           </p>
         </div>
-        <Link className="primary-button" href="/clientes/novo">
-          ＋ Cadastrar cliente
+        <Link className="primary-button" href="/contatos/novo">
+          ＋ Novo contato
         </Link>
       </header>
       <div className="contact-filters">
