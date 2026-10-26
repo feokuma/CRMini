@@ -250,7 +250,6 @@ export default function ClientForm({ id }: { id?: string }) {
             </label>
             <Field
               label="Site"
-              type="url"
               value={data.website}
               onChange={(v) => update("website", v)}
             />
