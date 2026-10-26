@@ -1,5 +1,6 @@
 "use client";
 
+import Breadcrumbs from "@/components/breadcrumbs";
 import { useEffect, useState } from "react";
 
 export default function SettingsPage() {
@@ -11,12 +12,30 @@ export default function SettingsPage() {
   useEffect(() => {
     const bridge = window.crmDesktop;
     if (!bridge) return;
+
+    let active = true;
     setAvailable(true);
-    bridge.getDatabasePath().then((databasePath) => {
-      if (!databasePath) throw new Error("O caminho do banco não está disponível.");
-      setPath(databasePath);
-    }).catch(() => setError("Não foi possível consultar o banco configurado. Tente novamente ou reinicie o aplicativo.")).finally(() => setLoading(false));
     setLoading(true);
+    bridge
+      .getDatabasePath()
+      .then((databasePath) => {
+        if (!databasePath)
+          throw new Error("O caminho do banco não está disponível.");
+        if (active) setPath(databasePath);
+      })
+      .catch(() => {
+        if (active)
+          setError(
+            "Não foi possível consultar o banco configurado. Tente novamente ou reinicie o aplicativo.",
+          );
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   async function changeDatabase() {
@@ -25,11 +44,99 @@ export default function SettingsPage() {
       const result = await window.crmDesktop?.chooseDatabase();
       if (result?.error) setError(result.error);
     } catch {
-      setError("Não foi possível abrir o seletor de banco de dados. Tente novamente.");
+      setError(
+        "Não foi possível abrir o seletor de banco de dados. Tente novamente.",
+      );
     }
   }
 
-  return <main className="content"><header className="page-header"><div><p className="eyebrow">PREFERÊNCIAS</p><h1>Configurações</h1></div></header>
-    {!available ? <p role="status">Configurações de banco disponíveis somente no aplicativo desktop.</p> : <section aria-labelledby="database-setting"><h2 id="database-setting">Banco de dados</h2><p>Caminho atual</p><p>{loading ? "Carregando caminho…" : path || "Caminho indisponível"}</p><button type="button" onClick={changeDatabase} disabled={loading || !path}>Trocar banco de dados</button><p>O aplicativo será reiniciado após a confirmação. O banco anterior não será movido nem apagado.</p>{error && <p role="alert">{error}</p>}</section>}
-  </main>;
+  const pathDescription =
+    [
+      loading ? "database-path-status" : null,
+      error ? "database-path-error" : null,
+    ]
+      .filter(Boolean)
+      .join(" ") || undefined;
+
+  return (
+    <main className="records-page">
+      <Breadcrumbs
+        items={[{ label: "Meu espaço", href: "/" }, { label: "Configurações" }]}
+      />
+      <header className="records-header">
+        <div>
+          <p className="eyebrow">PREFERÊNCIAS</p>
+          <h1>Configurações</h1>
+          <p className="subheading">
+            Ajustes do aplicativo e da origem dos dados.
+          </p>
+        </div>
+      </header>
+      <div className="settings-sections">
+        <section className="form-section" aria-labelledby="database-setting">
+          <div className="form-section-heading">
+            <div>
+              <h2 id="database-setting">Banco de dados</h2>
+              <p>Origem atual dos dados neste computador.</p>
+            </div>
+          </div>
+          <div className="settings-body">
+            {!available ? (
+              <p className="subheading" role="status">
+                Configurações de banco disponíveis somente no aplicativo
+                desktop.
+              </p>
+            ) : (
+              <>
+                <label className="form-field">
+                  <span>Caminho atual</span>
+                  <input
+                    type="text"
+                    readOnly
+                    value={path ?? ""}
+                    placeholder={loading ? "" : "Caminho indisponível"}
+                    title={path ?? undefined}
+                    aria-describedby={pathDescription}
+                    aria-invalid={error ? true : undefined}
+                  />
+                </label>
+                {loading && (
+                  <p
+                    className="subheading"
+                    id="database-path-status"
+                    role="status"
+                  >
+                    Carregando caminho…
+                  </p>
+                )}
+                {error && (
+                  <p
+                    className="form-error"
+                    id="database-path-error"
+                    role="alert"
+                  >
+                    {error}
+                  </p>
+                )}
+                <p className="subheading">
+                  O aplicativo será reiniciado após a confirmação. O banco
+                  anterior não será movido nem apagado.
+                </p>
+                <div className="settings-actions">
+                  <button
+                    type="button"
+                    className="primary-button"
+                    onClick={changeDatabase}
+                    disabled={loading || !path}
+                  >
+                    Trocar banco de dados
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </section>
+      </div>
+    </main>
+  );
 }

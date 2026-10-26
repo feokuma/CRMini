@@ -27,14 +27,52 @@ it("mostra estado indisponível no navegador sem oferecer ação de troca", () =
   ).not.toBeInTheDocument();
 });
 
+it("segue o esqueleto de página e o card de formulário do padrão visual", () => {
+  render(<SettingsPage />);
+
+  expect(screen.getByRole("main")).toHaveClass("records-page");
+  const breadcrumbs = screen.getByRole("navigation", {
+    name: "Navegação estrutural",
+  });
+  expect(breadcrumbs).toHaveTextContent("Meu espaço");
+  expect(breadcrumbs).toHaveTextContent("Configurações");
+  expect(screen.getByText("PREFERÊNCIAS")).toBeInTheDocument();
+  expect(
+    screen.getByRole("heading", { level: 1, name: "Configurações" }),
+  ).toBeInTheDocument();
+
+  const section = screen
+    .getByRole("heading", { name: "Banco de dados" })
+    .closest("section");
+  expect(section).toHaveClass("form-section");
+  expect(section).toHaveAttribute("aria-labelledby", "database-setting");
+});
+
+it("mostra o caminho em campo somente leitura com ação primária", async () => {
+  window.crmDesktop = {
+    getDatabasePath: vi.fn().mockResolvedValue("/user/crm.sqlite"),
+    chooseDatabase: vi.fn(),
+  };
+
+  render(<SettingsPage />);
+
+  const pathField = await screen.findByDisplayValue("/user/crm.sqlite");
+  expect(pathField).toHaveAttribute("readonly");
+  expect(
+    screen.getByRole("button", { name: /trocar banco de dados/i }),
+  ).toHaveClass("primary-button");
+});
+
 it("mostra caminho desktop e informa falha no seletor", async () => {
   window.crmDesktop = {
     getDatabasePath: vi.fn().mockResolvedValue("/user/crm.sqlite"),
-    chooseDatabase: vi.fn().mockResolvedValue({ ok: false, error: "Banco inválido" }),
+    chooseDatabase: vi
+      .fn()
+      .mockResolvedValue({ ok: false, error: "Banco inválido" }),
   };
   render(<SettingsPage />);
   await waitFor(() =>
-    expect(screen.getByText("/user/crm.sqlite")).toBeInTheDocument(),
+    expect(screen.getByDisplayValue("/user/crm.sqlite")).toBeInTheDocument(),
   );
   screen.getByRole("button", { name: /trocar banco/i }).click();
   await waitFor(() =>
@@ -60,7 +98,9 @@ it("exibe o caminho somente depois que a ponte responde", async () => {
     pathResponse.resolve("/tmp/isolated/crm.sqlite");
   });
 
-  expect(screen.getByText("/tmp/isolated/crm.sqlite")).toBeInTheDocument();
+  expect(
+    screen.getByDisplayValue("/tmp/isolated/crm.sqlite"),
+  ).toBeInTheDocument();
   expect(screen.queryByText("Carregando caminho…")).not.toBeInTheDocument();
 });
 
@@ -77,9 +117,11 @@ it("para o carregamento e bloqueia troca quando falha consulta do caminho", asyn
       "Não foi possível consultar o banco configurado.",
     ),
   );
-  expect(
-    screen.getByRole("button", { name: /trocar banco/i }),
-  ).toBeDisabled();
+  expect(screen.getByRole("button", { name: /trocar banco/i })).toBeDisabled();
+  expect(screen.getByLabelText("Caminho atual")).toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
 });
 
 it("mostra erro se a promessa do seletor rejeitar", async () => {
@@ -88,9 +130,15 @@ it("mostra erro se a promessa do seletor rejeitar", async () => {
     chooseDatabase: vi.fn().mockRejectedValue(new Error("IPC indisponível")),
   };
   render(<SettingsPage />);
-  await waitFor(() => expect(screen.getByText("/user/crm.sqlite")).toBeInTheDocument());
+  await waitFor(() =>
+    expect(screen.getByDisplayValue("/user/crm.sqlite")).toBeInTheDocument(),
+  );
   screen.getByRole("button", { name: /trocar banco/i }).click();
-  await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Não foi possível abrir o seletor"));
+  await waitFor(() =>
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Não foi possível abrir o seletor",
+    ),
+  );
 });
 
 it("não mostra erro quando o usuário cancela o seletor", async () => {
@@ -104,7 +152,7 @@ it("não mostra erro quando o usuário cancela o seletor", async () => {
 
   render(<SettingsPage />);
   await waitFor(() =>
-    expect(screen.getByText("/user/crm.sqlite")).toBeInTheDocument(),
+    expect(screen.getByDisplayValue("/user/crm.sqlite")).toBeInTheDocument(),
   );
   screen.getByRole("button", { name: /trocar banco/i }).click();
 
@@ -123,7 +171,7 @@ it("não mostra erro quando a troca é aceita e o aplicativo vai reiniciar", asy
 
   render(<SettingsPage />);
   await waitFor(() =>
-    expect(screen.getByText("/user/crm.sqlite")).toBeInTheDocument(),
+    expect(screen.getByDisplayValue("/user/crm.sqlite")).toBeInTheDocument(),
   );
   screen.getByRole("button", { name: /trocar banco/i }).click();
 
@@ -143,7 +191,7 @@ it("limpa o erro anterior ao tentar trocar novamente", async () => {
 
   render(<SettingsPage />);
   await waitFor(() =>
-    expect(screen.getByText("/user/crm.sqlite")).toBeInTheDocument(),
+    expect(screen.getByDisplayValue("/user/crm.sqlite")).toBeInTheDocument(),
   );
 
   screen.getByRole("button", { name: /trocar banco/i }).click();

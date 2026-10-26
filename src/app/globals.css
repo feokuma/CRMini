@@ -1902,3 +1902,28 @@ main.records-page .company-logo img {
     width: 100%;
   }
 }
+
+/* Configurações: mesmo esqueleto de página e card de formulário das demais telas. */
+main.records-page .settings-sections {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  display: grid;
+  gap: 16px;
+}
+main.records-page .settings-body {
+  display: grid;
+  gap: 12px;
+}
+main.records-page .settings-body > .subheading {
+  margin: 0;
+}
+main.records-page .settings-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+@media (max-width: 680px) {
+  main.records-page .settings-actions .primary-button {
+    width: 100%;
+  }
+}
