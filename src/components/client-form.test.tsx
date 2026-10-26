@@ -21,6 +21,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("next/image", () => ({ default: () => null }));
 
 import ClientForm from "./client-form";
+import { formatPhone } from "@/lib/phone";
 
 function jsonResponse(body: unknown, ok = true, status = 200) {
   return { ok, status, json: async () => body } as Response;
@@ -159,5 +160,242 @@ describe("ClientForm — campo Site", () => {
       (fetchMock.mock.calls[0][1] as RequestInit).body as string,
     );
     expect(body.website).toBe("");
+  });
+});
+
+describe("ClientForm — máscara de telefone", () => {
+  it("mascara o telefone geral ao digitar e envia o valor mascarado", async () => {
+    const fetchMock = mockFetch();
+    render(<ClientForm />);
+    const phone = screen.getByRole("textbox", { name: "Telefone geral" });
+
+    expect(phone).toHaveAttribute("placeholder", "(11) 91234-5678");
+    expect(phone).not.toHaveAttribute("maxlength");
+
+    fireEvent.change(phone, { target: { value: "11912345678" } });
+    expect(phone).toHaveValue("(11) 91234-5678");
+
+    fireEvent.change(screen.getByRole("textbox", { name: /Razão social/ }), {
+      target: { value: "Aurora Tecnologia" },
+    });
+    fireEvent.change(screen.getByRole("textbox", { name: /Nome completo/ }), {
+      target: { value: "Ana Souza" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar cliente" }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/clients",
+        expect.objectContaining({ method: "POST" }),
+      ),
+    );
+    const body = JSON.parse(
+      (fetchMock.mock.calls[0][1] as RequestInit).body as string,
+    );
+    expect(body.phone).toBe("(11) 91234-5678");
+  });
+
+  it("mascara telefone e celular do contato e envia os valores mascarados", async () => {
+    const fetchMock = mockFetch();
+    render(<ClientForm />);
+    const contactPhone = screen.getByRole("textbox", { name: "Telefone" });
+    const contactMobile = screen.getByRole("textbox", { name: "Celular" });
+
+    expect(contactPhone).toHaveAttribute("placeholder", "(11) 91234-5678");
+    expect(contactPhone).not.toHaveAttribute("maxlength");
+    expect(contactMobile).toHaveAttribute("placeholder", "(11) 91234-5678");
+    expect(contactMobile).not.toHaveAttribute("maxlength");
+
+    fireEvent.change(contactPhone, { target: { value: "1133331000" } });
+    fireEvent.change(contactMobile, { target: { value: "11912345678" } });
+    expect(contactPhone).toHaveValue("(11) 3333-1000");
+    expect(contactMobile).toHaveValue("(11) 91234-5678");
+
+    fireEvent.change(screen.getByRole("textbox", { name: /Razão social/ }), {
+      target: { value: "Aurora Tecnologia" },
+    });
+    fireEvent.change(screen.getByRole("textbox", { name: /Nome completo/ }), {
+      target: { value: "Ana Souza" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar cliente" }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/clients",
+        expect.objectContaining({ method: "POST" }),
+      ),
+    );
+    const body = JSON.parse(
+      (fetchMock.mock.calls[0][1] as RequestInit).body as string,
+    );
+    expect(body.contacts[0]).toMatchObject({
+      phone: "(11) 3333-1000",
+      mobile: "(11) 91234-5678",
+    });
+  });
+
+  it("carrega telefones mascarados na edição e preserva os valores no PUT", async () => {
+    const fetchMock = mockFetch((_url, init) =>
+      init?.method === "PUT"
+        ? jsonResponse({ id: "client-1" })
+        : jsonResponse(
+            savedClient({
+              phone: "+55 11 3333-1000",
+              contacts: [
+                {
+                  id: "contact-1",
+                  full_name: "Ana Souza",
+                  phone: "+55 11 3333-1000",
+                  mobile: "11912345678",
+                  is_primary: true,
+                },
+              ],
+            }),
+          ),
+    );
+    render(<ClientForm id="client-1" />);
+
+    const phone = screen.getByRole("textbox", { name: "Telefone geral" });
+    const contactPhone = screen.getByRole("textbox", { name: "Telefone" });
+    const contactMobile = screen.getByRole("textbox", { name: "Celular" });
+
+    await waitFor(() => expect(phone).toHaveValue("+55 (11) 3333-1000"));
+    expect(contactPhone).toHaveValue("+55 (11) 3333-1000");
+    expect(contactMobile).toHaveValue("(11) 91234-5678");
+
+    fireEvent.click(screen.getByRole("button", { name: "Salvar cliente" }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/clients/client-1",
+        expect.objectContaining({ method: "PUT" }),
+      ),
+    );
+    const putCall = fetchMock.mock.calls.find(
+      ([, init]) => (init as RequestInit | undefined)?.method === "PUT",
+    )!;
+    const body = JSON.parse((putCall[1] as RequestInit).body as string);
+    expect(body.phone).toBe("+55 (11) 3333-1000");
+    expect(body.contacts[0]).toMatchObject({
+      phone: "+55 (11) 3333-1000",
+      mobile: "(11) 91234-5678",
+    });
+  });
+
+  it("permite digitar o telefone geral caractere a caractere", async () => {
+    const fetchMock = mockFetch();
+    render(<ClientForm />);
+    const phone = screen.getByRole("textbox", { name: "Telefone geral" });
+
+    let masked = "";
+    for (const character of "11912345678") {
+      const typed = `${masked}${character}`;
+      fireEvent.change(phone, { target: { value: typed } });
+      masked = formatPhone(typed);
+      expect(phone).toHaveValue(masked);
+    }
+    expect(phone).toHaveValue("(11) 91234-5678");
+
+    fireEvent.change(screen.getByRole("textbox", { name: /Razão social/ }), {
+      target: { value: "Aurora Tecnologia" },
+    });
+    fireEvent.change(screen.getByRole("textbox", { name: /Nome completo/ }), {
+      target: { value: "Ana Souza" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar cliente" }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/clients",
+        expect.objectContaining({ method: "POST" }),
+      ),
+    );
+    const body = JSON.parse(
+      (fetchMock.mock.calls[0][1] as RequestInit).body as string,
+    );
+    expect(body.phone).toBe("(11) 91234-5678");
+  });
+
+  it("permite digitar o prefixo +55 caractere a caractere", async () => {
+    const fetchMock = mockFetch();
+    render(<ClientForm />);
+    const contactPhone = screen.getByRole("textbox", { name: "Telefone" });
+
+    let masked = "";
+    for (const character of "+5511912345678") {
+      const typed = `${masked}${character}`;
+      fireEvent.change(contactPhone, { target: { value: typed } });
+      masked = formatPhone(typed);
+      expect(contactPhone).toHaveValue(masked);
+    }
+    expect(contactPhone).toHaveValue("+55 (11) 91234-5678");
+
+    fireEvent.change(screen.getByRole("textbox", { name: /Razão social/ }), {
+      target: { value: "Aurora Tecnologia" },
+    });
+    fireEvent.change(screen.getByRole("textbox", { name: /Nome completo/ }), {
+      target: { value: "Ana Souza" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar cliente" }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/clients",
+        expect.objectContaining({ method: "POST" }),
+      ),
+    );
+    const body = JSON.parse(
+      (fetchMock.mock.calls[0][1] as RequestInit).body as string,
+    );
+    expect(body.contacts[0].phone).toBe("+55 (11) 91234-5678");
+  });
+
+  it("preserva telefones legados não editados ao salvar outro campo", async () => {
+    const fetchMock = mockFetch((_url, init) =>
+      init?.method === "PUT"
+        ? jsonResponse({ id: "client-1" })
+        : jsonResponse(
+            savedClient({
+              phone: "3333-1000",
+              contacts: [
+                {
+                  id: "contact-1",
+                  full_name: "Ana Souza",
+                  phone: "+1 (555) 123-4567 ramal 9",
+                  mobile: "0800 123 4567",
+                  is_primary: true,
+                },
+              ],
+            }),
+          ),
+    );
+    render(<ClientForm id="client-1" />);
+
+    const phone = screen.getByRole("textbox", { name: "Telefone geral" });
+    const contactPhone = screen.getByRole("textbox", { name: "Telefone" });
+    const contactMobile = screen.getByRole("textbox", { name: "Celular" });
+
+    await waitFor(() => expect(phone).toHaveValue("3333-1000"));
+    expect(contactPhone).toHaveValue("+1 (555) 123-4567 ramal 9");
+    expect(contactMobile).toHaveValue("0800 123 4567");
+
+    fireEvent.change(siteField(), { target: { value: "example.org" } });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar cliente" }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/clients/client-1",
+        expect.objectContaining({ method: "PUT" }),
+      ),
+    );
+    const putCall = fetchMock.mock.calls.find(
+      ([, init]) => (init as RequestInit | undefined)?.method === "PUT",
+    )!;
+    const body = JSON.parse((putCall[1] as RequestInit).body as string);
+    expect(body.phone).toBe("3333-1000");
+    expect(body.contacts[0]).toMatchObject({
+      phone: "+1 (555) 123-4567 ramal 9",
+      mobile: "0800 123 4567",
+    });
   });
 });

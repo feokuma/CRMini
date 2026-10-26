@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import Breadcrumbs from "@/components/breadcrumbs";
+import { formatPhone } from "@/lib/phone";
 
 type Client = { id: string; company_name: string; is_active?: boolean };
 
@@ -44,8 +45,8 @@ export default function ContactForm() {
         <label className="form-field">Cliente *<select name="client_id" required defaultValue=""><option value="" disabled>Selecione</option>{clients.filter((c) => c.is_active !== false).map((client) => <option key={client.id} value={client.id}>{client.company_name}</option>)}</select></label>
         <label className="form-field">Cargo<input name="job_title" maxLength={200} /></label>
         <label className="form-field">E-mail<input name="email" type="email" maxLength={254} /></label>
-        <label className="form-field">Telefone<input name="phone" type="tel" maxLength={50} /></label>
-        <label className="form-field">Celular<input name="mobile" type="tel" maxLength={50} /></label>
+        <label className="form-field">Telefone<input name="phone" type="tel" placeholder="(11) 91234-5678" onChange={(event) => { event.currentTarget.value = formatPhone(event.currentTarget.value); }} /></label>
+        <label className="form-field">Celular<input name="mobile" type="tel" placeholder="(11) 91234-5678" onChange={(event) => { event.currentTarget.value = formatPhone(event.currentTarget.value); }} /></label>
         <label className="form-field">Aniversário<input name="birthday" type="date" /></label>
         <label className="form-field">LinkedIn<input name="linkedin_url" type="url" maxLength={500} /></label>
         <label className="form-field">Observações<textarea name="notes" maxLength={5000} /></label>

@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { CLIENT_SEGMENTS } from "@/lib/segments";
+import { formatPhone, formatPhoneForDisplay } from "@/lib/phone";
 
 type Contact = {
   full_name: string;
@@ -82,10 +83,13 @@ export default function ClientForm({ id }: { id?: string }) {
           setData({
             ...initial,
             ...result,
+            phone: formatPhoneForDisplay(result.phone),
             contacts: result.contacts?.length
               ? result.contacts.map((contact: Contact) => ({
                   ...emptyContact(),
                   ...contact,
+                  phone: formatPhoneForDisplay(contact.phone),
+                  mobile: formatPhoneForDisplay(contact.mobile),
                   birthday: contact.birthday?.slice(0, 10) || "",
                 }))
               : [emptyContact()],
@@ -258,6 +262,8 @@ export default function ClientForm({ id }: { id?: string }) {
               type="tel"
               value={data.phone}
               onChange={(v) => update("phone", v)}
+              format={formatPhone}
+              placeholder="(11) 91234-5678"
             />
             <Field
               label="E-mail geral"
@@ -370,12 +376,16 @@ export default function ClientForm({ id }: { id?: string }) {
                   type="tel"
                   value={contact.phone}
                   onChange={(v) => updateContact(index, "phone", v)}
+                  format={formatPhone}
+                  placeholder="(11) 91234-5678"
                 />
                 <Field
                   label="Celular"
                   type="tel"
                   value={contact.mobile}
                   onChange={(v) => updateContact(index, "mobile", v)}
+                  format={formatPhone}
+                  placeholder="(11) 91234-5678"
                 />
                 <Field
                   label="Data de aniversário (opcional)"
@@ -439,6 +449,7 @@ function Field({
   type = "text",
   required = false,
   placeholder = "",
+  format,
 }: {
   label: string;
   value: string;
@@ -446,6 +457,7 @@ function Field({
   type?: string;
   required?: boolean;
   placeholder?: string;
+  format?: (value: string) => string;
 }) {
   return (
     <label className="form-field">
@@ -455,7 +467,9 @@ function Field({
         value={value || ""}
         required={required}
         placeholder={placeholder}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) =>
+          onChange(format ? format(event.target.value) : event.target.value)
+        }
       />
     </label>
   );

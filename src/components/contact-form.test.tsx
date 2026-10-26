@@ -21,6 +21,7 @@ vi.mock("next/link", () => ({
 }));
 
 import ContactForm from "./contact-form";
+import { formatPhone } from "@/lib/phone";
 
 const assign = vi.fn();
 
@@ -194,6 +195,78 @@ describe("Novo contato", () => {
     await waitFor(() => expect(assign).toHaveBeenCalledWith("/contatos"));
     expect(assign).toHaveBeenCalledTimes(1);
     expect(screen.getByRole("button", { name: "Cadastrar contato" })).toBeEnabled();
+  });
+
+  it("mascara telefone e celular ao digitar e envia os valores mascarados", async () => {
+    const fetchMock = mockFetch();
+    render(<ContactForm />);
+    await screen.findByRole("option", { name: "Aurora Tecnologia" });
+
+    const phone = screen.getByRole("textbox", { name: "Telefone" });
+    const mobile = screen.getByRole("textbox", { name: "Celular" });
+
+    expect(phone).toHaveAttribute("placeholder", "(11) 91234-5678");
+    expect(phone).not.toHaveAttribute("maxlength");
+    expect(mobile).toHaveAttribute("placeholder", "(11) 91234-5678");
+    expect(mobile).not.toHaveAttribute("maxlength");
+
+    fireEvent.change(phone, { target: { value: "1133331000" } });
+    fireEvent.change(mobile, { target: { value: "11912345678" } });
+    expect(phone).toHaveValue("(11) 3333-1000");
+    expect(mobile).toHaveValue("(11) 91234-5678");
+
+    fillRequiredFields();
+    fireEvent.click(submitButton());
+
+    const postCall = fetchMock.mock.calls.find(
+      ([url]) => url === "/api/contacts",
+    )!;
+    expect(JSON.parse((postCall[1] as RequestInit).body as string)).toMatchObject(
+      {
+        phone: "(11) 3333-1000",
+        mobile: "(11) 91234-5678",
+      },
+    );
+  });
+
+  it("permite digitar telefone e celular caractere a caractere", async () => {
+    const fetchMock = mockFetch();
+    render(<ContactForm />);
+    await screen.findByRole("option", { name: "Aurora Tecnologia" });
+
+    const phone = screen.getByRole("textbox", { name: "Telefone" });
+    const mobile = screen.getByRole("textbox", { name: "Celular" });
+
+    let phoneMasked = "";
+    for (const character of "11912345678") {
+      const typed = `${phoneMasked}${character}`;
+      fireEvent.change(phone, { target: { value: typed } });
+      phoneMasked = formatPhone(typed);
+      expect(phone).toHaveValue(phoneMasked);
+    }
+    expect(phone).toHaveValue("(11) 91234-5678");
+
+    let mobileMasked = "";
+    for (const character of "+5511912345678") {
+      const typed = `${mobileMasked}${character}`;
+      fireEvent.change(mobile, { target: { value: typed } });
+      mobileMasked = formatPhone(typed);
+      expect(mobile).toHaveValue(mobileMasked);
+    }
+    expect(mobile).toHaveValue("+55 (11) 91234-5678");
+
+    fillRequiredFields();
+    fireEvent.click(submitButton());
+
+    const postCall = fetchMock.mock.calls.find(
+      ([url]) => url === "/api/contacts",
+    )!;
+    expect(JSON.parse((postCall[1] as RequestInit).body as string)).toMatchObject(
+      {
+        phone: "(11) 91234-5678",
+        mobile: "+55 (11) 91234-5678",
+      },
+    );
   });
 
   it("exibe a mensagem da API e permanece no formulário em caso de erro", async () => {
