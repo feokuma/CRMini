@@ -47,6 +47,7 @@ export default function OpportunitiesView({
   const router = useRouter();
   const [clients, setClients] = useState<Client[]>([]),
     [items, setItems] = useState<Opportunity[]>([]),
+    [loading, setLoading] = useState(mode === "list"),
     [error, setError] = useState(""),
     [durationUnit, setDurationUnit] = useState<
       "hours" | "days" | "weeks" | "months"
@@ -58,10 +59,13 @@ export default function OpportunitiesView({
     [filterStatus, setFilterStatus] = useState(""),
     [openedAt, setOpenedAt] = useState("");
   async function refresh() {
+    setLoading(true);
+    try {
     const response = await fetch("/api/opportunities");
     const data = await response.json();
     if (!response.ok) throw new Error(data.error);
     setItems(data);
+    } finally { setLoading(false); }
   }
   useEffect(() => {
     setOpenedAt(getBrazilDateString());
@@ -365,7 +369,7 @@ export default function OpportunitiesView({
               {error}
             </p>
           )}
-          {!filtered.length && !error ? (
+          {loading ? <p role="status">Carregando oportunidades...</p> : !filtered.length && !error ? (
             <div className="empty-state">
               <span>◈</span>
               <h2>Nenhuma oportunidade encontrada</h2>

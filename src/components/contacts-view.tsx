@@ -29,9 +29,12 @@ export default function ContactsView() {
   const [query, setQuery] = useState("");
   const [segment, setSegment] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    let active = true;
+    const load = () => {
+      setLoading(true);
       const params = new URLSearchParams();
       if (query.trim()) params.set("q", query.trim());
       if (segment) params.set("segment", segment);
@@ -40,12 +43,14 @@ export default function ContactsView() {
           const data = await response.json();
           if (!response.ok)
             throw new Error(data.error || "Falha ao carregar contatos.");
-          setContacts(data);
-          setError("");
+          if (active) { setContacts(data); setError(""); }
         })
-        .catch((reason: Error) => setError(reason.message));
-    }, 200);
-    return () => clearTimeout(timer);
+        .catch((reason: Error) => { if (active) setError(reason.message); })
+        .finally(() => { if (active) setLoading(false); });
+    };
+    if (!query && !segment) load();
+    else { const timer = setTimeout(load, 200); return () => { active = false; clearTimeout(timer); }; }
+    return () => { active = false; };
   }, [query, segment]);
 
   return (
@@ -90,7 +95,7 @@ export default function ContactsView() {
         <span className="contact-count">{contacts.length} contato(s)</span>
       </div>
       {error && <p className="form-error">{error}</p>}
-      {!contacts.length && !error ? (
+      {loading ? <p role="status">Carregando contatos...</p> : error ? null : !contacts.length ? (
         <div className="empty-state">
           <span>♙</span>
           <h2>Nenhum contato encontrado</h2>

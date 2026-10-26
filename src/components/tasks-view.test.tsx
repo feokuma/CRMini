@@ -72,3 +72,106 @@ describe("TasksView date filter", () => {
     );
   });
 });
+
+function ok(body: unknown) {
+  return { ok: true, json: async () => body } as Response;
+}
+
+describe("Lista de tarefas", () => {
+  afterEach(() => {
+    cleanup();
+    sessionStorage.clear();
+    vi.restoreAllMocks();
+  });
+
+  it("mostra carregamento sem exibir o vazio enquanto a primeira resposta está pendente", async () => {
+    let resolveTasks!: (response: Response) => void;
+    vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
+      if (String(input) === "/api/clients") {
+        return Promise.resolve(ok([]));
+      }
+      return new Promise((done) => {
+        resolveTasks = done;
+      });
+    });
+
+    render(<TasksView />);
+
+    expect(screen.getByRole("status")).toHaveTextContent("Carregando tarefas");
+    expect(
+      screen.queryByRole("heading", { name: "Nenhuma tarefa encontrada" }),
+    ).not.toBeInTheDocument();
+
+    resolveTasks(ok([]));
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Nenhuma tarefa encontrada",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("exibe as tarefas retornadas pela API", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      if (String(input) === "/api/clients") return ok([]);
+      return ok([
+        {
+          id: "task-1",
+          contact_type: "email",
+          subject: "Retornar contato",
+          description: null,
+          scheduled_at: "2026-10-26T12:00:00.000Z",
+          status: "Aberto",
+          client_id: "client-1",
+          contact_id: "contact-1",
+          company_name: "Empresa Alfa",
+          contact_name: "Pessoa Exemplo",
+        },
+      ]);
+    });
+
+    render(<TasksView />);
+
+    expect(await screen.findByText("Retornar contato")).toBeInTheDocument();
+    expect(screen.getByText("1 tarefa(s)")).toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Nenhuma tarefa encontrada" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("exibe o estado vazio quando a API responde sem tarefas", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      if (String(input) === "/api/clients") return ok([]);
+      return ok([]);
+    });
+
+    render(<TasksView />);
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "Nenhuma tarefa encontrada",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("0 tarefa(s)")).toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("exibe a mensagem de erro e não o vazio quando a API falha", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      if (String(input) === "/api/clients") return ok([]);
+      throw new Error("Falha ao carregar tarefas.");
+    });
+
+    render(<TasksView />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Falha ao carregar tarefas.",
+    );
+    expect(
+      screen.queryByRole("heading", { name: "Nenhuma tarefa encontrada" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+});

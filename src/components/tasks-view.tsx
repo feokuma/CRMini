@@ -54,6 +54,7 @@ export default function TasksView({
 }) {
   const router = useRouter();
   const [filtersReady, setFiltersReady] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [clients, setClients] = useState<Client[]>([]),
     [tasks, setTasks] = useState<Task[]>([]),
     [clientId, setClientId] = useState(""),
@@ -61,6 +62,8 @@ export default function TasksView({
     [status, setStatus] = useState(""),
     [error, setError] = useState("");
   async function load() {
+    setLoading(true);
+    try {
     const params = new URLSearchParams();
     if (date) params.set("date", date);
     if (status) params.set("status", status);
@@ -70,6 +73,7 @@ export default function TasksView({
     const data = await r.json();
     if (!r.ok) throw new Error(data.error);
     setTasks(data);
+    } finally { setLoading(false); }
   }
   useEffect(() => {
     try {
@@ -263,7 +267,7 @@ export default function TasksView({
               {error}
             </p>
           )}
-          {!tasks.length && !error ? (
+          {loading ? <p role="status">Carregando tarefas...</p> : !tasks.length && !error ? (
             <div className="empty-state">
               <span>✓</span>
               <h2>Nenhuma tarefa encontrada</h2>

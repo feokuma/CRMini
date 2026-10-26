@@ -22,18 +22,23 @@ export default function ClientsView() {
   const [clients, setClients] = useState<Client[]>([]);
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
-    const timer = setTimeout(() => {
+    let active = true;
+    const load = () => {
+      setLoading(true);
       fetch(`/api/clients${query ? `?q=${encodeURIComponent(query)}` : ""}`)
         .then(async (response) => {
           const data = await response.json();
           if (!response.ok) throw new Error(data.error);
-          setClients(data);
-          setError("");
+          if (active) { setClients(data); setError(""); }
         })
-        .catch((reason: Error) => setError(reason.message));
-    }, 200);
-    return () => clearTimeout(timer);
+        .catch((reason: Error) => { if (active) setError(reason.message); })
+        .finally(() => { if (active) setLoading(false); });
+    };
+    if (!query) load();
+    else { const timer = setTimeout(load, 200); return () => { active = false; clearTimeout(timer); }; }
+    return () => { active = false; };
   }, [query]);
 
   async function deactivate(id: string) {
@@ -79,7 +84,7 @@ export default function ClientsView() {
         <span>{clients.length} cliente(s)</span>
       </div>
       {error && <p className="form-error">{error}</p>}
-      {clients.length === 0 && !error ? (
+      {loading ? <p role="status">Carregando clientes...</p> : error ? null : clients.length === 0 ? (
         <div className="empty-state">
           <span>◎</span>
           <h2>Nenhum cliente cadastrado</h2>
