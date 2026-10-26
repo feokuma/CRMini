@@ -3,10 +3,10 @@ import "./globals.css";
 import AppSidebar from "@/components/app-sidebar";
 
 export const metadata: Metadata = {
-  title: "Reply CRM",
+  title: "CRMini",
   description:
     "Um espaço simples para acompanhar seus clientes e oportunidades.",
-  icons: { icon: "/brand/reply-favicon.ico" },
+  icons: { icon: "/brand/crmini-favicon.ico" },
 };
 
 export default function RootLayout({
