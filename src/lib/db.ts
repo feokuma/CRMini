@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
 import { normalizeSearch } from "@/lib/normalize-search";
+import { phoneDigits } from "@/lib/phone";
 
 const databaseDir = path.join(process.cwd(), "database");
 const paths =
@@ -22,6 +23,7 @@ function openDatabase(): Database.Database {
   if (existed && filename !== ":memory:") paths.validateDatabase(filename);
   const sqlite = new Database(filename);
   sqlite.function("normalize", normalizeSearch);
+  sqlite.function("phone_digits", phoneDigits);
   sqlite.pragma("journal_mode = WAL");
   // O SQLite só verifica chaves estrangeiras quando habilitadas por conexão.
   sqlite.pragma("foreign_keys = ON");

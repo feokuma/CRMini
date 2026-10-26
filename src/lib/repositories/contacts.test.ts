@@ -102,6 +102,26 @@ describe("listContacts", () => {
     ).toContain("José Silva");
   });
 
+  it("busca contatos pelos dígitos do telefone formatado", async () => {
+    const company = getDb()
+      .prepare("SELECT id FROM clients WHERE company_name = ?")
+      .get("Aurora Tecnologia Ltda.") as { id: string };
+    await createContact({
+      client_id: company.id,
+      full_name: "Contato Telefone",
+      phone: "(11) 91234-5678",
+    });
+
+    for (const query of ["1191234", "91234", "912345678"]) {
+      const contacts = await listContacts(query, null);
+      expect(contacts.map((contact) => contact.full_name)).toEqual([
+        "Contato Telefone",
+      ]);
+    }
+
+    expect(await listContacts("xyz", null)).toEqual([]);
+  });
+
   it("filtra por segmento da empresa", async () => {
     const contacts = await listContacts(null, "Varejo e produtos naturais");
     expect(contacts.map((contact) => contact.full_name)).toEqual([

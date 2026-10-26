@@ -32,6 +32,9 @@ export async function listContacts(
        WHERE (@query IS NULL OR normalize(p.full_name) LIKE '%' || normalize(@query) || '%'
          OR normalize(p.email) LIKE '%' || normalize(@query) || '%' OR normalize(p.job_title) LIKE '%' || normalize(@query) || '%'
          OR normalize(p.phone) LIKE '%' || normalize(@query) || '%' OR normalize(p.mobile) LIKE '%' || normalize(@query) || '%'
+         OR (phone_digits(@query) <> ''
+           AND (phone_digits(p.phone) LIKE '%' || phone_digits(@query) || '%'
+             OR phone_digits(p.mobile) LIKE '%' || phone_digits(@query) || '%'))
          OR normalize(c.company_name) LIKE '%' || normalize(@query) || '%' OR normalize(c.trade_name) LIKE '%' || normalize(@query) || '%')
          AND (@industry IS NULL OR c.industry = @industry)
        ORDER BY c.company_name, p.is_primary DESC, p.full_name`,
