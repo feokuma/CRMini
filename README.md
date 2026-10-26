@@ -106,6 +106,7 @@ Depois do build, a versão de produção pode ser iniciada com `npm run start`.
 - `database/seed.sql` e `database/seed.mjs`: clientes, contatos e oportunidades de demonstração.
 - `tmp/assets`: armazenamento provisório dos logos enviados (não versionado).
 - `src/app/globals.css`: estilos responsivos da aplicação.
+- `docs/padrao-visual.md`: padrão visual obrigatório para criação e ajuste de telas.
 - `src/app/layout.tsx`: layout raiz e metadados.
 
 Clientes não são excluídos pela aplicação: a ação disponível os desativa e preserva o histórico. A duração de projeto é persistida em horas (8 por dia, 40 por semana e 160 por mês). Datas e horários seguem o padrão brasileiro na interface e o fuso `America/Sao_Paulo`; instantes são armazenados em UTC, enquanto campos de data civil permanecem sem conversão de fuso. Logos aceitam PNG, JPG ou WebP até 2 MB. `tmp/assets` é um armazenamento provisório, não adequado para implantação efêmera ou produção.

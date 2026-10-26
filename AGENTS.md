@@ -6,6 +6,7 @@
 - Páginas e rotas da aplicação ficam em `src/app`; componentes compartilhados em `src/components`; lógica reutilizável em `src/lib`.
 - APIs ficam em `src/app/api`. O schema para bancos novos está em `database/init.sql`; alterações para bancos existentes são migrations manuais em `database/migrations`.
 - Antes de alterar um fluxo, leia a página/componente, a rota de API e as constraints SQL relacionadas. Não presuma que a validação da interface protege a API.
+- O padrão visual obrigatório para criar ou ajustar telas está em `docs/padrao-visual.md`.
 
 ## Regras de domínio observadas
 
