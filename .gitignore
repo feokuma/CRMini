@@ -11,3 +11,6 @@ tmp/assets/*
 database/*.sqlite
 database/*.sqlite-shm
 database/*.sqlite-wal
+database/*.sqlite.bak-*
+database/*.sqlite.bak-*-shm
+database/*.sqlite.bak-*-wal

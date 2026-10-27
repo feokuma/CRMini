@@ -13,7 +13,8 @@
     "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,css,md,yml,yaml,mjs,cjs,mts}\"",
     "test": "vitest run",
     "test:components": "vitest run",
-    "db:seed": "node database/seed.mjs"
+    "db:seed": "node database/seed.mjs",
+    "db:migrate": "node database/migrate.cjs"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",
