@@ -17,6 +17,7 @@ type Contact = {
   birthday?: string;
   linkedin_url?: string;
   is_primary: boolean;
+  is_active: boolean;
   client_id: string;
   company_name: string;
   trade_name?: string;
@@ -28,7 +29,9 @@ export default function ContactsView() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [query, setQuery] = useState("");
   const [segment, setSegment] = useState("");
+  const [includeInactive, setIncludeInactive] = useState(false);
   const [error, setError] = useState("");
+  const [actionError, setActionError] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -38,12 +41,13 @@ export default function ContactsView() {
       const params = new URLSearchParams();
       if (query.trim()) params.set("q", query.trim());
       if (segment) params.set("segment", segment);
+      if (includeInactive) params.set("include_inactive", "1");
       fetch(`/api/contacts${params.size ? `?${params}` : ""}`)
         .then(async (response) => {
           const data = await response.json();
           if (!response.ok)
             throw new Error(data.error || "Falha ao carregar contatos.");
-          if (active) { setContacts(data); setError(""); }
+          if (active) { setContacts(data); setError(""); setActionError(""); }
         })
         .catch((reason: Error) => { if (active) setError(reason.message); })
         .finally(() => { if (active) setLoading(false); });
@@ -51,7 +55,22 @@ export default function ContactsView() {
     if (!query && !segment) load();
     else { const timer = setTimeout(load, 200); return () => { active = false; clearTimeout(timer); }; }
     return () => { active = false; };
-  }, [query, segment]);
+  }, [query, segment, includeInactive]);
+
+  async function changeActive(contact: Contact) {
+    if (contact.is_active && !window.confirm("Desativar este contato? O histórico será preservado.")) return;
+    try {
+      const response = await fetch(`/api/contacts/${contact.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ is_active: !contact.is_active }) });
+      let updated: { is_active: boolean } | undefined;
+      try { updated = await response.json(); } catch { updated = undefined; }
+      if (!response.ok) { setActionError(updated && "error" in updated ? String((updated as { error: string }).error) : "Não foi possível atualizar o contato."); return; }
+      if (!updated) throw new Error("Não foi possível atualizar o contato.");
+      setActionError("");
+      setContacts((current) => includeInactive ? current.map((item) => item.id === contact.id ? { ...item, is_active: updated!.is_active } : item) : current.filter((item) => item.id !== contact.id));
+    } catch {
+      setActionError("Não foi possível atualizar o contato.");
+    }
+  }
 
   return (
     <main className="records-page">
@@ -92,9 +111,13 @@ export default function ContactsView() {
             ))}
           </select>
         </label>
-        <span className="contact-count">{contacts.length} contato(s)</span>
+        <div className="contact-filter-meta">
+          <span className="contact-count">{contacts.length} contato(s)</span>
+          <label className="contact-filter-toggle"><input type="checkbox" checked={includeInactive} onChange={(event) => setIncludeInactive(event.target.checked)} /><span>Mostrar desativados</span></label>
+        </div>
       </div>
-      {error && <p className="form-error">{error}</p>}
+      {error && <p className="form-error" role="alert">{error}</p>}
+      {actionError && <p className="form-error" role="alert">{actionError}</p>}
       {loading ? <p role="status">Carregando contatos...</p> : error ? null : !contacts.length ? (
         <div className="empty-state">
           <span>♙</span>
@@ -118,7 +141,7 @@ export default function ContactsView() {
               </div>
               <div className="contact-list-person">
                 <div className="contact-name-line">
-                  <b>{contact.full_name}</b>
+                  <b>{contact.full_name}{!contact.is_active && " (Desativado)"}</b>
                   {contact.is_primary && (
                     <span className="primary-badge">Principal</span>
                   )}
@@ -176,7 +199,7 @@ export default function ContactsView() {
                   in
                 </span>
               )}
-              <Link className="text-link" href={`/contatos/${contact.id}`} aria-label={`Editar contato ${contact.full_name}`}>Editar →</Link>
+               <span className="contact-row-actions"><Link className="text-link" href={`/contatos/${contact.id}`} aria-label={`Editar contato ${contact.full_name}`}>Editar →</Link> <button className="filter-button" type="button" aria-label={`${contact.is_active ? "Desativar" : "Reativar"} contato ${contact.full_name}`} onClick={() => void changeActive(contact)}>{contact.is_active ? "Desativar" : "Reativar"}</button></span>
             </article>
           ))}
         </div>

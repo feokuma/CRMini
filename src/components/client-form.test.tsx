@@ -350,6 +350,92 @@ describe("ClientForm — máscara de telefone", () => {
     expect(body.contacts[0].phone).toBe("+55 (11) 91234-5678");
   });
 
+  it("mantém o contato persistido quando a remoção é cancelada", async () => {
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    mockFetch((_url, init) =>
+      init?.method === "PUT"
+        ? jsonResponse({ id: "client-1" })
+        : jsonResponse(
+            savedClient({
+              contacts: [
+                { id: "contact-1", full_name: "Ana Souza", is_primary: true },
+                { id: "contact-2", full_name: "Bruno Lima", is_primary: false },
+              ],
+            }),
+          ),
+    );
+    render(<ClientForm id="client-1" />);
+
+    await waitFor(() =>
+      expect(screen.getByDisplayValue("Ana Souza")).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Remover" })[0]);
+
+    expect(confirmSpy).toHaveBeenCalledWith(
+      "Desativar este contato? O histórico será preservado.",
+    );
+    expect(confirmSpy).toHaveBeenCalledTimes(1);
+    expect(screen.getByDisplayValue("Ana Souza")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Bruno Lima")).toBeInTheDocument();
+  });
+
+  it("remove o contato persistido após confirmação sem enviar is_active", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    const fetchMock = mockFetch((_url, init) =>
+      init?.method === "PUT"
+        ? jsonResponse({ id: "client-1" })
+        : jsonResponse(
+            savedClient({
+              contacts: [
+                { id: "contact-1", full_name: "Ana Souza", is_primary: true },
+                { id: "contact-2", full_name: "Bruno Lima", is_primary: false },
+              ],
+            }),
+          ),
+    );
+    render(<ClientForm id="client-1" />);
+
+    await waitFor(() =>
+      expect(screen.getByDisplayValue("Ana Souza")).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "Remover" })[0]);
+
+    expect(screen.queryByDisplayValue("Ana Souza")).not.toBeInTheDocument();
+    expect(screen.getByDisplayValue("Bruno Lima")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Salvar cliente" }));
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/clients/client-1",
+        expect.objectContaining({ method: "PUT" }),
+      ),
+    );
+    const putCall = fetchMock.mock.calls.find(
+      ([, init]) => (init as RequestInit | undefined)?.method === "PUT",
+    )!;
+    const body = JSON.parse((putCall[1] as RequestInit).body as string);
+    expect(body.contacts).toHaveLength(1);
+    expect(body.contacts[0]).toMatchObject({
+      id: "contact-2",
+      full_name: "Bruno Lima",
+    });
+    expect(body.contacts[0]).not.toHaveProperty("is_active");
+  });
+
+  it("remove contato novo sem confirmação", () => {
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    mockFetch();
+    render(<ClientForm />);
+
+    fireEvent.click(screen.getByRole("button", { name: "＋ Adicionar contato" }));
+    expect(screen.getAllByRole("button", { name: "Remover" })).toHaveLength(2);
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Remover" })[1]);
+
+    expect(confirmSpy).not.toHaveBeenCalled();
+    expect(screen.queryAllByRole("button", { name: "Remover" })).toHaveLength(0);
+  });
+
   it("preserva telefones legados não editados ao salvar outro campo", async () => {
     const fetchMock = mockFetch((_url, init) =>
       init?.method === "PUT"

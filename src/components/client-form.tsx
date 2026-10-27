@@ -9,6 +9,7 @@ import { CLIENT_SEGMENTS } from "@/lib/segments";
 import { formatPhone, formatPhoneForDisplay } from "@/lib/phone";
 
 type Contact = {
+  id?: string;
   full_name: string;
   job_title: string;
   email: string;
@@ -342,12 +343,10 @@ export default function ClientForm({ id }: { id?: string }) {
                   <button
                     type="button"
                     className="subtle-button danger-link"
-                    onClick={() =>
-                      update(
-                        "contacts",
-                        data.contacts.filter((_, i) => i !== index),
-                      )
-                    }
+                    onClick={() => {
+                      if (contact.id && !window.confirm("Desativar este contato? O histórico será preservado.")) return;
+                      update("contacts", data.contacts.filter((_, i) => i !== index));
+                    }}
                   >
                     Remover
                   </button>

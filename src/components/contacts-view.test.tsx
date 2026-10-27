@@ -4,6 +4,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
   within,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -67,6 +68,7 @@ describe("Lista de contatos", () => {
           job_title: "Analista",
           email: "pessoa@example.com",
           is_primary: true,
+          is_active: true,
           client_id: "client-1",
           company_name: "Empresa Alfa",
           industry: "Tecnologia",
@@ -159,6 +161,7 @@ describe("Lista de contatos", () => {
           id: "contact-2",
           full_name: "Pessoa Beta",
           is_primary: false,
+          is_active: true,
           client_id: "client-2",
           company_name: "Empresa Beta",
         },
@@ -175,6 +178,7 @@ describe("Lista de contatos", () => {
           id: "contact-1",
           full_name: "Pessoa Alfa",
           is_primary: false,
+          is_active: true,
           client_id: "client-1",
           company_name: "Empresa Alfa",
         },
@@ -194,6 +198,7 @@ describe("Lista de contatos", () => {
           id: "contact-1",
           full_name: "Pessoa Exemplo",
           is_primary: true,
+          is_active: true,
           client_id: "client-1",
           company_name: "Empresa Alfa",
         },
@@ -201,6 +206,7 @@ describe("Lista de contatos", () => {
           id: "contact-2",
           full_name: "Pessoa Beta",
           is_primary: false,
+          is_active: true,
           client_id: "client-2",
           company_name: "Empresa Beta",
         },
@@ -226,9 +232,9 @@ describe("Lista de contatos", () => {
     );
     expect(screen.getAllByRole("link", { name: "Editar contato Pessoa Exemplo" })).toHaveLength(1);
     expect(screen.getAllByRole("link", { name: "Editar contato Pessoa Beta" })).toHaveLength(1);
-    expect(firstEditLink.parentElement).toHaveClass("contact-row");
+    expect(firstEditLink.closest(".contact-row")).toBe(firstRow);
     expect(firstEditLink.closest(".contact-name-line")).toBeNull();
-    expect(secondEditLink.parentElement).toHaveClass("contact-row");
+    expect(secondEditLink.closest(".contact-row")).toBe(secondRow);
     expect(secondEditLink.closest(".contact-name-line")).toBeNull();
   });
 
@@ -248,5 +254,158 @@ describe("Lista de contatos", () => {
         name: "Nenhum contato encontrado",
       }),
     ).toBeInTheDocument();
+  });
+
+  it("consulta desativados ao marcar Mostrar desativados e exibe o marcador", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      ok([
+        {
+          id: "contact-1",
+          full_name: "Pessoa Ativa",
+          is_primary: true,
+          is_active: true,
+          client_id: "client-1",
+          company_name: "Empresa Alfa",
+        },
+        {
+          id: "contact-2",
+          full_name: "Pessoa Inativa",
+          is_primary: false,
+          is_active: false,
+          client_id: "client-1",
+          company_name: "Empresa Alfa",
+        },
+      ]),
+    );
+
+    render(<ContactsView />);
+    expect(await screen.findByText("Pessoa Ativa")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Mostrar desativados" }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenLastCalledWith(
+        "/api/contacts?include_inactive=1",
+      ),
+    );
+    expect(await screen.findByText(/Pessoa Inativa/)).toHaveTextContent(
+      "Pessoa Inativa (Desativado)",
+    );
+  });
+
+  it("desativa o contato após confirmação e remove a linha da listagem padrão", async () => {
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(async (_input, init) => {
+        if (init?.method === "PATCH")
+          return ok({ id: "contact-1", full_name: "Pessoa Exemplo", is_active: false });
+        return ok([
+          {
+            id: "contact-1",
+            full_name: "Pessoa Exemplo",
+            is_primary: true,
+            is_active: true,
+            client_id: "client-1",
+            company_name: "Empresa Alfa",
+          },
+        ]);
+      });
+
+    render(<ContactsView />);
+    fireEvent.click(await screen.findByRole("button", { name: "Desativar contato Pessoa Exemplo" }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/contacts/contact-1",
+        expect.objectContaining({
+          method: "PATCH",
+          body: JSON.stringify({ is_active: false }),
+        }),
+      ),
+    );
+    await waitFor(() =>
+      expect(screen.queryByText("Pessoa Exemplo")).not.toBeInTheDocument(),
+    );
+    expect(confirmSpy).toHaveBeenCalledWith(
+      "Desativar este contato? O histórico será preservado.",
+    );
+    expect(screen.getByText("0 contato(s)")).toBeInTheDocument();
+  });
+
+  it("reativa o contato via PATCH e atualiza o marcador na linha", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(async (input, init) => {
+        if (init?.method === "PATCH")
+          return ok({ id: "contact-2", full_name: "Pessoa Inativa", is_active: true });
+        if (String(input).includes("include_inactive=1"))
+          return ok([
+            {
+              id: "contact-2",
+              full_name: "Pessoa Inativa",
+              is_primary: false,
+              is_active: false,
+              client_id: "client-1",
+              company_name: "Empresa Alfa",
+            },
+          ]);
+        return ok([]);
+      });
+
+    render(<ContactsView />);
+    expect(
+      await screen.findByRole("heading", { name: "Nenhum contato encontrado" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Mostrar desativados" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Reativar contato Pessoa Inativa" }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/contacts/contact-2",
+        expect.objectContaining({
+          method: "PATCH",
+          body: JSON.stringify({ is_active: true }),
+        }),
+      ),
+    );
+    await waitFor(() =>
+      expect(screen.getByText(/Pessoa Inativa/)).not.toHaveTextContent(
+        "(Desativado)",
+      ),
+    );
+    expect(screen.getByText("Pessoa Inativa")).toBeInTheDocument();
+  });
+
+  it("mantém a linha quando a desativação é cancelada", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(false);
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        ok([
+          {
+            id: "contact-1",
+            full_name: "Pessoa Exemplo",
+            is_primary: true,
+            is_active: true,
+            client_id: "client-1",
+            company_name: "Empresa Alfa",
+          },
+        ]),
+      );
+
+    render(<ContactsView />);
+    fireEvent.click(await screen.findByRole("button", { name: "Desativar contato Pessoa Exemplo" }));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(screen.getByText("Pessoa Exemplo")).toBeInTheDocument();
+    expect(
+      fetchMock.mock.calls.some(
+        ([, init]) => (init as RequestInit | undefined)?.method === "PATCH",
+      ),
+    ).toBe(false);
   });
 });
