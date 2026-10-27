@@ -6,7 +6,7 @@ vi.hoisted(() => {
 
 import { getDb } from "@/lib/db";
 import { createClient, deactivateClient } from "./clients";
-import { createContact, listContacts } from "./contacts";
+import { createContact, getContact, listContacts, updateContact } from "./contacts";
 
 function cleanTables() {
   getDb().exec(
@@ -228,5 +228,166 @@ describe("createContact", () => {
       createContact({ client_id: "missing", full_name: "Fantasma" }),
     ).resolves.toBeUndefined();
     expect(contactCount()).toBe(totalBefore);
+  });
+});
+
+describe("getContact", () => {
+  function contactId(fullName: string) {
+    return (
+      getDb()
+        .prepare("SELECT id FROM contacts WHERE full_name = ?")
+        .get(fullName) as { id: string }
+    ).id;
+  }
+
+  it("retorna o contato com dados da empresa e is_primary booleano", async () => {
+    const id = contactId("Mariana Costa");
+
+    const contact = await getContact(id);
+
+    expect(contact).toMatchObject({
+      id,
+      full_name: "Mariana Costa",
+      job_title: "Diretora",
+      email: "mariana@example.com",
+      company_name: "Aurora Tecnologia Ltda.",
+      trade_name: "Aurora",
+      industry: "Tecnologia da Informação",
+      is_primary: true,
+    });
+    expect(typeof contact!.is_primary).toBe("boolean");
+  });
+
+  it("retorna is_primary falso para contato não principal", async () => {
+    const id = contactId("Rafael Mendes");
+
+    const contact = await getContact(id);
+
+    expect(contact).toMatchObject({ full_name: "Rafael Mendes", is_primary: false });
+    expect(typeof contact!.is_primary).toBe("boolean");
+  });
+
+  it("retorna undefined para contato inexistente", async () => {
+    await expect(getContact("missing-contact")).resolves.toBeUndefined();
+  });
+});
+
+describe("updateContact", () => {
+  function contactId(fullName: string) {
+    return (
+      getDb()
+        .prepare("SELECT id FROM contacts WHERE full_name = ?")
+        .get(fullName) as { id: string }
+    ).id;
+  }
+
+  function companyId(companyName: string) {
+    return (
+      getDb()
+        .prepare("SELECT id FROM clients WHERE company_name = ?")
+        .get(companyName) as { id: string }
+    ).id;
+  }
+
+  it("atualiza todos os campos, normaliza o nome e preserva o cliente original", async () => {
+    const id = contactId("Rafael Mendes");
+    const originalClientId = companyId("Aurora Tecnologia Ltda.");
+    const otherClientId = companyId("Verde Vivo S.A.");
+    getDb()
+      .prepare(
+        "UPDATE contacts SET created_at = ?, updated_at = ? WHERE id = ?",
+      )
+      .run("2020-01-01T00:00:00.000Z", "2020-01-01T00:00:00.000Z", id);
+
+    const updated = await updateContact(id, {
+      client_id: otherClientId,
+      full_name: "  Rafael Mendes Silva  ",
+      job_title: "Head de Engenharia",
+      email: "rafael.silva@example.com",
+      phone: "(11) 3333-1000",
+      mobile: "(11) 91234-5678",
+      birthday: "1985-07-09",
+      linkedin_url: "https://www.linkedin.com/in/rafael-exemplo",
+      notes: "Prefere contato por telefone",
+      is_primary: true,
+    });
+
+    expect(updated).toMatchObject({
+      id,
+      client_id: originalClientId,
+      full_name: "Rafael Mendes Silva",
+      job_title: "Head de Engenharia",
+      email: "rafael.silva@example.com",
+      phone: "(11) 3333-1000",
+      mobile: "(11) 91234-5678",
+      birthday: "1985-07-09",
+      linkedin_url: "https://www.linkedin.com/in/rafael-exemplo",
+      notes: "Prefere contato por telefone",
+      is_primary: true,
+    });
+    expect(updated!.is_primary).toBe(true);
+    expect(updated!.created_at).toBe("2020-01-01T00:00:00.000Z");
+    expect(updated!.updated_at).not.toBe("2020-01-01T00:00:00.000Z");
+    expect(updated!.updated_at).toMatch(
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+    );
+
+    const reloaded = await getContact(id);
+    expect(reloaded).toMatchObject({
+      client_id: originalClientId,
+      company_name: "Aurora Tecnologia Ltda.",
+      full_name: "Rafael Mendes Silva",
+      is_primary: true,
+    });
+  });
+
+  it("grava campos opcionais vazios como nulos e desmarca o contato principal", async () => {
+    const id = contactId("Mariana Costa");
+
+    const updated = await updateContact(id, {
+      full_name: "  Mariana Costa  ",
+      job_title: "",
+      email: "",
+      phone: "",
+      mobile: "",
+      birthday: "",
+      linkedin_url: "",
+      notes: "",
+      is_primary: false,
+    });
+
+    expect(updated).toMatchObject({
+      full_name: "Mariana Costa",
+      job_title: null,
+      email: null,
+      phone: null,
+      mobile: null,
+      birthday: null,
+      linkedin_url: null,
+      notes: null,
+      is_primary: false,
+    });
+
+    const row = getDb()
+      .prepare("SELECT is_primary FROM contacts WHERE id = ?")
+      .get(id) as { is_primary: number };
+    expect(row.is_primary).toBe(0);
+  });
+
+  it("retorna undefined e não altera dados para contato inexistente", async () => {
+    const totalBefore = (
+      getDb().prepare("SELECT COUNT(*) AS total FROM contacts").get() as {
+        total: number;
+      }
+    ).total;
+
+    await expect(
+      updateContact("missing-contact", { full_name: "Fantasma", is_primary: true }),
+    ).resolves.toBeUndefined();
+    expect(
+      (getDb().prepare("SELECT COUNT(*) AS total FROM contacts").get() as {
+        total: number;
+      }).total,
+    ).toBe(totalBefore);
   });
 });

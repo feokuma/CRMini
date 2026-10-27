@@ -4,6 +4,7 @@ import {
   fireEvent,
   render,
   screen,
+  within,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -184,6 +185,51 @@ describe("Lista de contatos", () => {
     expect(screen.getByText("Pessoa Beta")).toBeInTheDocument();
     expect(screen.queryByText("Pessoa Alfa")).not.toBeInTheDocument();
     expect(screen.getByText("1 contato(s)")).toBeInTheDocument();
+  });
+
+  it("exibe o link de edição em cada linha apontando para o contato", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      ok([
+        {
+          id: "contact-1",
+          full_name: "Pessoa Exemplo",
+          is_primary: true,
+          client_id: "client-1",
+          company_name: "Empresa Alfa",
+        },
+        {
+          id: "contact-2",
+          full_name: "Pessoa Beta",
+          is_primary: false,
+          client_id: "client-2",
+          company_name: "Empresa Beta",
+        },
+      ]),
+    );
+
+    render(<ContactsView />);
+
+    const firstRow = (await screen.findByText("Pessoa Exemplo")).closest(
+      ".contact-row",
+    )!;
+    const secondRow = screen.getByText("Pessoa Beta").closest(".contact-row")!;
+    const firstEditLink = within(firstRow).getByRole("link", { name: "Editar contato Pessoa Exemplo" });
+    const secondEditLink = within(secondRow).getByRole("link", { name: "Editar contato Pessoa Beta" });
+
+    expect(firstEditLink).toHaveAttribute(
+      "href",
+      "/contatos/contact-1",
+    );
+    expect(secondEditLink).toHaveAttribute(
+      "href",
+      "/contatos/contact-2",
+    );
+    expect(screen.getAllByRole("link", { name: "Editar contato Pessoa Exemplo" })).toHaveLength(1);
+    expect(screen.getAllByRole("link", { name: "Editar contato Pessoa Beta" })).toHaveLength(1);
+    expect(firstEditLink.parentElement).toHaveClass("contact-row");
+    expect(firstEditLink.closest(".contact-name-line")).toBeNull();
+    expect(secondEditLink.parentElement).toHaveClass("contact-row");
+    expect(secondEditLink.closest(".contact-name-line")).toBeNull();
   });
 
   it("leva ao formulário de novo contato a partir do cabeçalho", async () => {

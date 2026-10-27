@@ -306,3 +306,259 @@ describe("Novo contato", () => {
     expect(assign).not.toHaveBeenCalled();
   });
 });
+
+describe("Editar contato", () => {
+  const loadedContact = {
+    id: "contact-1",
+    client_id: "client-1",
+    company_name: "Aurora Tecnologia",
+    full_name: "Pessoa Exemplo",
+    job_title: "Analista",
+    email: "pessoa@example.com",
+    phone: "1133331000",
+    mobile: "11912345678",
+    birthday: "1990-02-03",
+    linkedin_url: "https://www.linkedin.com/in/pessoa-exemplo",
+    notes: "Prefere contato por e-mail",
+    is_primary: true,
+  };
+
+  function mockEditFetch(
+    contactOverrides: Record<string, unknown> = {},
+    saveResponse: () => Response = () => jsonResponse({ id: "contact-1" }),
+  ) {
+    return mockFetch((url, init) => {
+      if (url === "/api/clients") return jsonResponse(clients);
+      if (init?.method === "PUT") return saveResponse();
+      return jsonResponse({ ...loadedContact, ...contactOverrides });
+    });
+  }
+
+  async function renderLoadedContact(
+    contactOverrides: Record<string, unknown> = {},
+  ) {
+    mockEditFetch(contactOverrides);
+    render(<ContactForm id="contact-1" />);
+    await screen.findByRole("heading", { level: 1, name: "Editar contato" });
+  }
+
+  const saveButton = () => screen.getByRole("button", { name: "Salvar contato" });
+
+  it("mostra o carregamento enquanto o contato está pendente", async () => {
+    let resolveContact!: (response: Response) => void;
+    mockFetch((url) =>
+      url === "/api/clients"
+        ? jsonResponse(clients)
+        : new Promise<Response>((resolve) => {
+            resolveContact = resolve;
+          }),
+    );
+
+    render(<ContactForm id="contact-1" />);
+
+    expect(screen.getByRole("status")).toHaveTextContent("Carregando contato...");
+    expect(
+      screen.queryByRole("heading", { level: 1, name: "Editar contato" }),
+    ).toBeNull();
+
+    resolveContact(jsonResponse(loadedContact));
+
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Editar contato" }),
+    ).toBeInTheDocument();
+  });
+
+  it("renderiza o cabeçalho, o breadcrumb e as ações da edição", async () => {
+    await renderLoadedContact();
+
+    expect(screen.getByText("Atualize os dados do contato.")).toBeInTheDocument();
+    expect(saveButton()).toHaveAttribute("type", "submit");
+    expect(
+      screen.getByRole("link", { name: /Voltar aos contatos/ }),
+    ).toHaveAttribute("href", "/contatos");
+
+    const breadcrumbs = screen.getByRole("navigation", {
+      name: "Navegação estrutural",
+    });
+    expect(
+      within(breadcrumbs).getByRole("link", { name: "Contatos" }),
+    ).toHaveAttribute("href", "/contatos");
+    expect(breadcrumbs).toHaveTextContent("Editar contato");
+    expect(
+      within(breadcrumbs).queryByRole("link", { name: "Editar contato" }),
+    ).toBeNull();
+  });
+
+  it("pré-preenche os campos com os dados do contato", async () => {
+    await renderLoadedContact();
+
+    expect(
+      screen.getByRole("textbox", { name: /Nome completo/ }),
+    ).toHaveValue("Pessoa Exemplo");
+    expect(screen.getByRole("textbox", { name: "Cargo" })).toHaveValue(
+      "Analista",
+    );
+    expect(screen.getByRole("textbox", { name: "E-mail" })).toHaveValue(
+      "pessoa@example.com",
+    );
+    expect(screen.getByRole("textbox", { name: "Telefone" })).toHaveValue(
+      "(11) 3333-1000",
+    );
+    expect(screen.getByRole("textbox", { name: "Celular" })).toHaveValue(
+      "(11) 91234-5678",
+    );
+    expect(screen.getByLabelText(/Aniversário/)).toHaveValue("1990-02-03");
+    expect(screen.getByRole("textbox", { name: "LinkedIn" })).toHaveValue(
+      "https://www.linkedin.com/in/pessoa-exemplo",
+    );
+    expect(
+      screen.getByRole("textbox", { name: /Observações/ }),
+    ).toHaveValue("Prefere contato por e-mail");
+    expect(
+      screen.getByRole("checkbox", { name: "Contato principal" }),
+    ).toBeChecked();
+  });
+
+  it("desabilita o cliente, não o exige e mostra um cliente inativo atual", async () => {
+    await renderLoadedContact({
+      client_id: "client-2",
+      company_name: "Empresa Inativa",
+    });
+
+    const client = screen.getByRole("combobox", { name: /Cliente/ });
+    expect(client).toBeDisabled();
+    expect(client).not.toBeRequired();
+    expect(client).toHaveValue("client-2");
+    expect(
+      screen.getByRole("option", { name: "Empresa Inativa" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("O cliente não pode ser alterado.")).toBeInTheDocument();
+  });
+
+  it("exibe o cliente atual mesmo quando ele não está na lista de ativos", async () => {
+    await renderLoadedContact({
+      client_id: "client-9",
+      company_name: "Empresa Externa",
+    });
+
+    const client = screen.getByRole("combobox", { name: /Cliente/ });
+    expect(client).toHaveValue("client-9");
+    expect(
+      screen.getByRole("option", { name: "Empresa Externa" }),
+    ).toBeInTheDocument();
+  });
+
+  it("envia PUT sem client_id e navega para a lista após o sucesso", async () => {
+    const fetchMock = mockEditFetch();
+    render(<ContactForm id="contact-1" />);
+    await screen.findByRole("heading", { level: 1, name: "Editar contato" });
+
+    fireEvent.change(screen.getByRole("textbox", { name: /Nome completo/ }), {
+      target: { value: "Pessoa Atualizada" },
+    });
+    fireEvent.change(screen.getByRole("textbox", { name: "Cargo" }), {
+      target: { value: "Coordenadora" },
+    });
+    fireEvent.change(screen.getByRole("textbox", { name: /Observações/ }), {
+      target: { value: "Atualizado no teste" },
+    });
+    fireEvent.click(saveButton());
+
+    await waitFor(() => expect(assign).toHaveBeenCalledWith("/contatos"));
+    expect(assign).toHaveBeenCalledTimes(1);
+
+    const putCall = fetchMock.mock.calls.find(
+      ([url, init]) =>
+        url === "/api/contacts/contact-1" &&
+        (init as RequestInit | undefined)?.method === "PUT",
+    )!;
+    const init = putCall[1] as RequestInit;
+    expect(init.headers).toEqual({ "Content-Type": "application/json" });
+    const body = JSON.parse(init.body as string);
+    expect(body).toMatchObject({
+      full_name: "Pessoa Atualizada",
+      job_title: "Coordenadora",
+      email: "pessoa@example.com",
+      phone: "(11) 3333-1000",
+      mobile: "(11) 91234-5678",
+      birthday: "1990-02-03",
+      linkedin_url: "https://www.linkedin.com/in/pessoa-exemplo",
+      notes: "Atualizado no teste",
+    });
+    expect(body).not.toHaveProperty("client_id");
+    expect(body.is_primary).toBe("true");
+  });
+
+  it("exibe a mensagem da API e permanece no formulário em caso de erro", async () => {
+    mockEditFetch({}, () =>
+      jsonResponse({ error: "Contato não encontrado." }, false, 404),
+    );
+    render(<ContactForm id="contact-1" />);
+    await screen.findByRole("heading", { level: 1, name: "Editar contato" });
+
+    fireEvent.click(saveButton());
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Contato não encontrado.",
+    );
+    expect(assign).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Editar contato" }),
+    ).toBeInTheDocument();
+    expect(saveButton()).toBeEnabled();
+  });
+
+  it("usa uma mensagem padrão quando a API não informa o erro", async () => {
+    mockEditFetch({}, () => jsonResponse({}, false, 500));
+    render(<ContactForm id="contact-1" />);
+    await screen.findByRole("heading", { level: 1, name: "Editar contato" });
+
+    fireEvent.click(saveButton());
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Não foi possível atualizar o contato.",
+    );
+    expect(assign).not.toHaveBeenCalled();
+  });
+
+  it("exibe a mensagem da API quando não consegue carregar o contato", async () => {
+    mockFetch((url) =>
+      url === "/api/clients"
+        ? jsonResponse(clients)
+        : jsonResponse({ error: "Contato não encontrado." }, false, 404),
+    );
+
+    render(<ContactForm id="contact-1" />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Contato não encontrado.",
+    );
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Editar contato" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Salvar contato" }),
+    ).toBeNull();
+  });
+
+  it("mantém o formulário carregado quando os clientes falham", async () => {
+    mockFetch((url) =>
+      url === "/api/clients"
+        ? jsonResponse({ error: "Falha interna." }, false, 500)
+        : jsonResponse(loadedContact),
+    );
+
+    render(<ContactForm id="contact-1" />);
+
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Editar contato" }),
+    ).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Não foi possível carregar os clientes.",
+    );
+    expect(
+      screen.getByRole("textbox", { name: /Nome completo/ }),
+    ).toHaveValue("Pessoa Exemplo");
+    expect(saveButton()).toBeEnabled();
+  });
+});
