@@ -1,4 +1,5 @@
 const { app, BrowserWindow, dialog, ipcMain } = require("electron");
+const { applyMigrations } = require("./database-migrations.cjs");
 const { createDatabaseManager } = require("./database-manager.cjs");
 const { createServerLifecycle } = require("./server-lifecycle.cjs");
 const path = require("node:path");
@@ -7,7 +8,11 @@ const host = "127.0.0.1";
 const isDevelopment = process.argv.includes("--dev");
 let mainWindow;
 let serverStoppedForQuit = false;
-const server = createServerLifecycle({ projectDir: path.resolve(__dirname, ".."), isDevelopment, host });
+const server = createServerLifecycle({
+  projectDir: path.resolve(__dirname, ".."),
+  isDevelopment,
+  host,
+});
 
 const databaseManager = createDatabaseManager({
   app,
@@ -30,6 +35,16 @@ async function createWindow() {
     app.quit();
     return;
   }
+  try {
+    await applyMigrations({ databasePath });
+  } catch (error) {
+    console.error(error);
+    // A preferência só é salva depois da migração: se o banco falhar, a próxima
+    // abertura volta a oferecer a escolha em vez de repetir o mesmo erro.
+    dialog.showErrorBox("Não foi possível atualizar o banco", error.message);
+    app.quit();
+    return;
+  }
   databaseManager.saveDatabasePath(databasePath);
   try {
     const serverUrl = await server.start(databasePath);
@@ -38,7 +53,11 @@ async function createWindow() {
       height: 900,
       minWidth: 900,
       minHeight: 600,
-      webPreferences: { preload: path.join(__dirname, "preload.cjs"), contextIsolation: true, nodeIntegration: false },
+      webPreferences: {
+        preload: path.join(__dirname, "preload.cjs"),
+        contextIsolation: true,
+        nodeIntegration: false,
+      },
     });
     await mainWindow.loadURL(serverUrl);
   } catch (error) {
