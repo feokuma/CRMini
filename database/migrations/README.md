@@ -11,6 +11,9 @@ cada uma uma única vez, em ordem, a bancos compatíveis, por exemplo:
 sqlite3 database/crm.sqlite < database/migrations/001_exemplo.sql
 ```
 
+Bancos existentes precisam aplicar `001_contacts_soft_delete.sql` antes de
+usar a versão com soft delete de contatos.
+
 Faça backup do arquivo `database/crm.sqlite` antes de migrations destrutivas.
 As migrations da era PostgreSQL foram removidas na migração para SQLite; o
 histórico delas permanece no Git.
