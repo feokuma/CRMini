@@ -53,7 +53,7 @@ O comando `npm run desktop` inicia `next start` e não gera um build. Portanto, 
 
 ## Banco de dados e migrations
 
-O banco é um arquivo SQLite local no diretório de dados do usuário (configurável por `SQLITE_PATH`). O schema é criado automaticamente na primeira conexão a partir de `database/init.sql`. No Electron, a escolha ocorre apenas na primeira inicialização e fica salva nas preferências do usuário. Use Configurações para escolher outro banco; o app reinicia para abrir o novo caminho, sem mover ou apagar o anterior. Se o caminho salvo não estiver disponível ou for inválido, o app informa o problema e oferece seletor explícito de recuperação; cancelar encerra o app preservando a preferência e sem criar banco vazio.
+O banco é um arquivo SQLite local no diretório de dados do usuário (configurável por `SQLITE_PATH`). Na abertura, as migrations pendentes de `database/migrations` são executadas automaticamente em ordem e, em seguida, o schema de `database/init.sql` é reaplicado de forma idempotente (em banco novo, o `init.sql` cria tudo e as migrations históricas entram apenas no registro). No Electron, a escolha do banco ocorre apenas na primeira inicialização e fica salva nas preferências do usuário; as migrations rodam antes de iniciar o Next.js, e uma falha impede a abertura da janela. Use Configurações para escolher outro banco; o app reinicia para abrir o novo caminho, sem mover ou apagar o anterior. Se o caminho salvo não estiver disponível ou for inválido, o app informa o problema e oferece seletor explícito de recuperação; cancelar encerra o app preservando a preferência e sem criar banco vazio.
 
 Para inserir os dados de demonstração (três empresas, seus contatos e oportunidades de exemplo), execute:
 
@@ -63,7 +63,7 @@ npm run db:seed
 
 O seed pode ser executado novamente sem duplicar esses registros.
 
-Alterações de schema para bancos já existentes são migrations manuais em `database/migrations`, aplicadas em ordem numérica, uma única vez cada; veja `database/migrations/README.md`. Faça backup do arquivo do banco antes de migrations destrutivas. Para descartar completamente o banco local e recriá-lo do zero, apague o arquivo `database/crm.sqlite` — isso apaga todos os dados.
+Alterações de schema para bancos já existentes são migrations append-only em `database/migrations`, aplicadas automaticamente em ordem numérica na abertura do banco e também por `npm run db:migrate` (com caminho opcional: `npm run db:migrate -- /tmp/banco.sqlite`). Antes de aplicar migrations pendentes, o runner cria uma cópia de segurança `<caminho-do-banco>.bak-<AAAAMMDDhhmmss>`; bancos criados por uma versão mais nova do CRM, com migrations desconhecidas, são recusados sem alteração. Veja `database/migrations/README.md`. Para descartar completamente o banco local e recriá-lo do zero, apague o arquivo `database/crm.sqlite` — isso apaga todos os dados.
 
 ### Convenções de dados
 
@@ -100,9 +100,10 @@ Depois do build, a versão de produção pode ser iniciada com `npm run start`.
 - `src/app/api/clients`: endpoints de cadastro, consulta, edição e exclusão.
 - `src/app/oportunidades`: cadastro e acompanhamento de oportunidades.
 - `src/app/tarefas`: tarefas.
-- `src/lib/db.ts`: conexão SQLite única, com schema inicial e foreign keys habilitadas.
+- `src/lib/db.ts`: conexão SQLite única, com schema inicial, migrations e foreign keys habilitadas.
 - `database/init.sql`: schema SQLite para bancos novos.
-- `database/migrations`: migrations manuais para bancos existentes.
+- `database/migrate.cjs`: runner que aplica o schema, registra/aplica migrations e gera backup antes de alterar bancos existentes.
+- `database/migrations`: migrations SQL append-only para bancos existentes.
 - `database/seed.sql` e `database/seed.mjs`: clientes, contatos e oportunidades de demonstração.
 - `tmp/assets`: armazenamento provisório dos logos enviados (não versionado).
 - `src/app/globals.css`: estilos responsivos da aplicação.

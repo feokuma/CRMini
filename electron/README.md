@@ -18,6 +18,8 @@ O Electron inicia `next dev`; alterações no código são refletidas sem gerar 
 2. Gere a versão de produção com `npm run build`.
 3. Execute `npm run desktop`.
 
+Antes de iniciar o Next.js, o app aplica as migrations pendentes do banco escolhido em um processo Node separado (`electron/database-migrations.cjs` → `database/migrate.cjs`). Se a atualização falhar, a janela não abre: o app mostra o erro, informa o caminho do backup gerado e encerra sem alterar o restante do banco.
+
 O servidor fica limitado a `127.0.0.1:3174`. Esta PoC inicia e encerra o Next.js junto da janela. Na primeira inicialização, escolha o banco padrão (`app.getPath('userData')/crm.sqlite`), abrir banco existente ou criar/selecionar arquivo; a escolha é persistida em `userData/preferences.json`. A sidebar Configurações permite trocar o caminho e reinicia o app após confirmação do seletor nativo. O banco anterior nunca é movido ou apagado. Se o caminho persistido não estiver disponível ou for inválido, o app informa o problema e oferece seletor explícito de recuperação; cancelar encerra o app preservando a preferência e sem criar arquivo vazio. Para backup, encerre o app antes de copiar o arquivo, ou use a API SQLite de backup.
 
 ## Limitações / próximos passos
