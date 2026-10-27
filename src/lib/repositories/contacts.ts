@@ -19,6 +19,29 @@ export async function createContact(input: Record<string, any>) {
   return result;
 }
 
+export async function getContact(id: string): Promise<Record<string, any> | undefined> {
+  const row = getDb().prepare(
+    `SELECT p.*, c.company_name, c.trade_name, c.industry
+     FROM contacts p JOIN clients c ON c.id = p.client_id WHERE p.id = @id`,
+  ).get({ id }) as Record<string, any> | undefined;
+  return row ? { ...row, is_primary: Boolean(row.is_primary) } : undefined;
+}
+
+export async function updateContact(id: string, input: Record<string, any>) {
+  const result = getDb().prepare(
+    `UPDATE contacts SET full_name = @full_name, job_title = @job_title,
+     email = @email, phone = @phone, mobile = @mobile, birthday = @birthday,
+     linkedin_url = @linkedin_url, notes = @notes, is_primary = @is_primary,
+     updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = @id`,
+  ).run({
+    id, full_name: input.full_name.trim(), job_title: input.job_title || null,
+    email: input.email || null, phone: input.phone || null, mobile: input.mobile || null,
+    birthday: input.birthday || null, linkedin_url: input.linkedin_url || null,
+    notes: input.notes || null, is_primary: input.is_primary ? 1 : 0,
+  });
+  return result.changes ? getContact(id) : undefined;
+}
+
 export async function listContacts(
   query: string | null,
   industry: string | null,

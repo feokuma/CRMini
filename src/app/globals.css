@@ -1268,8 +1268,8 @@ main.records-page .company-logo img {
 .contact-row {
   display: grid;
   grid-template-columns:
-    44px minmax(150px, 1.1fr) minmax(155px, 1fr) minmax(180px, 1fr)
-    28px;
+    44px minmax(120px, 1.1fr) minmax(120px, 1fr) minmax(130px, 1fr)
+    28px auto;
   gap: 14px;
   align-items: center;
   padding: 14px 17px;
@@ -1300,6 +1300,10 @@ main.records-page .company-logo img {
   align-items: center;
   gap: 7px;
   flex-wrap: wrap;
+}
+.contact-row > .text-link {
+  justify-self: end;
+  white-space: nowrap;
 }
 .contact-list-person b {
   font-size: 12px;
@@ -1408,7 +1412,7 @@ main.records-page .company-logo img {
 }
 @media (max-width: 900px) {
   .contact-row {
-    grid-template-columns: 42px minmax(150px, 1fr) minmax(150px, 1fr) 26px;
+    grid-template-columns: 42px minmax(150px, 1fr) minmax(150px, 1fr) 26px auto;
     gap: 11px;
   }
   .contact-list-company {
@@ -1424,6 +1428,11 @@ main.records-page .company-logo img {
   }
   .contact-list-person {
     grid-column: 2;
+  }
+  .contact-row > .text-link {
+    grid-column: 5;
+    grid-row: 1 / span 2;
+    align-self: center;
   }
   .contact-list-company {
     grid-row: 2;
@@ -1443,7 +1452,7 @@ main.records-page .company-logo img {
     grid-column: 1;
   }
   .contact-row {
-    grid-template-columns: 38px minmax(0, 1fr) 28px;
+    grid-template-columns: 38px minmax(0, 1fr) 28px auto;
     padding: 13px;
     gap: 9px;
   }
@@ -1455,6 +1464,11 @@ main.records-page .company-logo img {
     grid-column: 2;
     grid-row: 1;
   }
+  .contact-row > .text-link {
+    grid-column: 4;
+    grid-row: 1;
+    align-self: center;
+  }
   .linkedin-link,
   .linkedin-placeholder {
     grid-column: 3;
@@ -1465,7 +1479,7 @@ main.records-page .company-logo img {
     grid-row: 2;
   }
   .contact-list-details {
-    grid-column: 2/4;
+    grid-column: 2/5;
     grid-row: 3;
   }
   .contact-count {

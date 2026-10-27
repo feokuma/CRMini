@@ -176,6 +176,7 @@ export default function ContactsView() {
                   in
                 </span>
               )}
+              <Link className="text-link" href={`/contatos/${contact.id}`} aria-label={`Editar contato ${contact.full_name}`}>Editar →</Link>
             </article>
           ))}
         </div>
