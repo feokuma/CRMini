@@ -14,6 +14,13 @@
 -- - As chaves estrangeiras são verificadas porque cada conexão executa
 --   PRAGMA foreign_keys = ON (ver src/lib/db.ts).
 
+-- Registro das migrations já aplicadas ao banco (ver database/migrate.cjs).
+CREATE TABLE IF NOT EXISTS schema_migrations (
+  version TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  applied_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+
 CREATE TABLE IF NOT EXISTS clients (
   id TEXT PRIMARY KEY,
   company_name TEXT NOT NULL,

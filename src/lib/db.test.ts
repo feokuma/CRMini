@@ -22,6 +22,19 @@ describe("getDb", () => {
       )
       .all()
       .map((row) => (row as { name: string }).name);
-    expect(tables).toEqual(["clients", "contacts", "opportunities", "tasks"]);
+    expect(tables).toEqual([
+      "clients",
+      "contacts",
+      "opportunities",
+      "schema_migrations",
+      "tasks",
+    ]);
+  });
+
+  it("registra a versão 001 em schema_migrations no banco novo", () => {
+    const rows = getDb()
+      .prepare("SELECT version, name FROM schema_migrations ORDER BY version")
+      .all();
+    expect(rows).toEqual([{ version: "001", name: "contacts_soft_delete" }]);
   });
 });
