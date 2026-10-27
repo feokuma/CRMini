@@ -5,7 +5,7 @@ const contactColumns = `
   'id', p.id, 'client_id', p.client_id, 'full_name', p.full_name,
   'job_title', p.job_title, 'email', p.email, 'phone', p.phone,
   'mobile', p.mobile, 'birthday', p.birthday, 'linkedin_url', p.linkedin_url,
-  'notes', p.notes, 'is_primary', p.is_primary,
+  'notes', p.notes, 'is_primary', p.is_primary, 'is_active', p.is_active,
   'created_at', p.created_at, 'updated_at', p.updated_at`;
 
 interface ClientRow extends Record<string, any> {
@@ -21,6 +21,7 @@ function mapClientRow(row: ClientRow): Record<string, any> {
     contacts: contacts.map((contact) => ({
       ...contact,
       is_primary: Boolean(contact.is_primary),
+      is_active: Boolean(contact.is_active),
     })),
   };
 }
@@ -32,7 +33,7 @@ export async function listClients(
     .prepare(
       `SELECT c.*, COALESCE(json_group_array(json_object(${contactColumns}))
         FILTER (WHERE p.id IS NOT NULL), '[]') AS contacts
-      FROM clients c LEFT JOIN contacts p ON p.client_id = c.id
+      FROM clients c LEFT JOIN contacts p ON p.client_id = c.id AND p.is_active = 1
       WHERE (@search IS NULL OR normalize(c.company_name) LIKE '%' || normalize(@search) || '%'
         OR normalize(p.full_name) LIKE '%' || normalize(@search) || '%')
       GROUP BY c.id ORDER BY c.created_at DESC`,
@@ -105,20 +106,11 @@ export async function getClient(
     .prepare(
       `SELECT c.*, COALESCE(json_group_array(json_object(${contactColumns}))
         FILTER (WHERE p.id IS NOT NULL), '[]') AS contacts
-      FROM clients c LEFT JOIN contacts p ON p.client_id = c.id
+      FROM clients c LEFT JOIN contacts p ON p.client_id = c.id AND p.is_active = 1
       WHERE c.id = @id GROUP BY c.id`,
     )
     .get({ id }) as ClientRow | undefined;
   return { client: row ? mapClientRow(row) : undefined, found: Boolean(row) };
-}
-
-export class ClientContactsInUseError extends Error {
-  constructor(contactNames: string[]) {
-    super(
-      `Não é possível remover contatos com tarefas ou oportunidades vinculadas: ${contactNames.join(", ")}.`,
-    );
-    this.name = "ClientContactsInUseError";
-  }
 }
 
 export async function updateClient(
@@ -144,20 +136,15 @@ export async function updateClient(
      updated_at=strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
      WHERE id=@id AND client_id=@client_id`,
   );
-  const deleteContact = db.prepare(
-    "DELETE FROM contacts WHERE id = @id AND client_id = @client_id",
-  );
+  const deactivateContact = db.prepare("UPDATE contacts SET is_active = 0, updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = @id AND client_id = @client_id");
   const listExistingContacts = db.prepare(
-    "SELECT id, full_name FROM contacts WHERE client_id = @client_id",
-  );
-  const countContactDependencies = db.prepare(
-    `SELECT (SELECT COUNT(*) FROM tasks WHERE contact_id = @id)
-      + (SELECT COUNT(*) FROM opportunities WHERE contact_id = @id) AS total`,
+    "SELECT id, full_name, is_active FROM contacts WHERE client_id = @client_id",
   );
   const run = db.transaction((input: Record<string, any>) => {
     const existing = listExistingContacts.all({ client_id: id }) as {
       id: string;
       full_name: string;
+      is_active: number;
     }[];
     const existingIds = new Set(existing.map((contact) => contact.id));
     const contacts = (input.contacts || []).filter((contact: any) =>
@@ -174,17 +161,7 @@ export async function updateClient(
           Boolean(contactId),
         ),
     );
-    const removed = existing.filter((contact) => !keptIds.has(contact.id));
-    const blocked = removed.filter(
-      (contact) =>
-        (countContactDependencies.get({ id: contact.id }) as { total: number })
-          .total > 0,
-    );
-    if (blocked.length)
-      throw new ClientContactsInUseError(
-        blocked.map((contact) => contact.full_name),
-      );
-
+    const removed = existing.filter((contact) => contact.is_active === 1 && !keptIds.has(contact.id));
     const updated = updateStmt.get({
       id,
       company_name: input.company_name.trim(),
@@ -224,7 +201,7 @@ export async function updateClient(
       }
     }
     for (const contact of removed) {
-      deleteContact.run({ id: contact.id, client_id: id });
+      deactivateContact.run({ id: contact.id, client_id: id });
     }
     return updated;
   });

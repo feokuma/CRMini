@@ -6,7 +6,14 @@ vi.hoisted(() => {
 
 import { getDb } from "@/lib/db";
 import { createClient, deactivateClient } from "./clients";
-import { createContact, getContact, listContacts, updateContact } from "./contacts";
+import {
+  createContact,
+  deactivateContact,
+  getContact,
+  listContacts,
+  reactivateContact,
+  updateContact,
+} from "./contacts";
 
 function cleanTables() {
   getDb().exec(
@@ -389,5 +396,132 @@ describe("updateContact", () => {
         total: number;
       }).total,
     ).toBe(totalBefore);
+  });
+});
+
+describe("soft delete de contatos", () => {
+  function contactId(fullName: string) {
+    return (
+      getDb()
+        .prepare("SELECT id FROM contacts WHERE full_name = ?")
+        .get(fullName) as { id: string }
+    ).id;
+  }
+
+  function companyId(companyName: string) {
+    return (
+      getDb()
+        .prepare("SELECT id FROM clients WHERE company_name = ?")
+        .get(companyName) as { id: string }
+    ).id;
+  }
+
+  function isActive(id: string) {
+    return (
+      getDb()
+        .prepare("SELECT is_active FROM contacts WHERE id = ?")
+        .get(id) as { is_active: number }
+    ).is_active;
+  }
+
+  it("cria contato ativo e o expõe com is_active booleano", async () => {
+    const contact = await createContact({
+      client_id: companyId("Aurora Tecnologia Ltda."),
+      full_name: "Contato Ativo",
+    });
+
+    expect(contact!.is_active).toBe(1);
+    const stored = await getContact(contact!.id);
+    expect(stored).toMatchObject({ full_name: "Contato Ativo", is_active: true });
+    expect(typeof stored!.is_active).toBe("boolean");
+    expect(
+      (await listContacts("Contato Ativo", null)).map((item) => item.full_name),
+    ).toEqual(["Contato Ativo"]);
+  });
+
+  it("lista desativados somente com includeInactive e não os encontra na busca padrão", async () => {
+    const rafael = contactId("Rafael Mendes");
+    await deactivateContact(rafael);
+
+    const active = await listContacts(null, null);
+    expect(active.map((contact) => contact.full_name)).not.toContain("Rafael Mendes");
+    expect(active.every((contact) => contact.is_active === true)).toBe(true);
+
+    const all = await listContacts(null, null, true);
+    const inactive = all.find((contact) => contact.full_name === "Rafael Mendes")!;
+    expect(inactive.is_active).toBe(false);
+    expect(typeof inactive.is_active).toBe("boolean");
+
+    expect(await listContacts("rafael", null)).toEqual([]);
+    expect(
+      (await listContacts("rafael", null, true)).map((contact) => contact.full_name),
+    ).toEqual(["Rafael Mendes"]);
+  });
+
+  it("retorna contato desativado em getContact preservando os dados", async () => {
+    const id = contactId("Mariana Costa");
+    await deactivateContact(id);
+
+    const contact = await getContact(id);
+
+    expect(contact).toMatchObject({
+      id,
+      full_name: "Mariana Costa",
+      company_name: "Aurora Tecnologia Ltda.",
+      is_active: false,
+    });
+  });
+
+  it("desativa de forma idempotente e sinaliza contato inexistente", async () => {
+    const id = contactId("Rafael Mendes");
+
+    await expect(deactivateContact(id)).resolves.toBe(true);
+    expect(isActive(id)).toBe(0);
+    await expect(deactivateContact(id)).resolves.toBe(true);
+    expect(isActive(id)).toBe(0);
+
+    await expect(deactivateContact("missing-contact")).resolves.toBe(false);
+  });
+
+  it("reativa de forma idempotente e sinaliza contato inexistente", async () => {
+    const id = contactId("Rafael Mendes");
+    await deactivateContact(id);
+
+    await expect(reactivateContact(id)).resolves.toBe(true);
+    expect(isActive(id)).toBe(1);
+    await expect(reactivateContact(id)).resolves.toBe(true);
+    expect(isActive(id)).toBe(1);
+
+    await expect(reactivateContact("missing-contact")).resolves.toBe(false);
+  });
+
+  it("updateContact não reativa contato desativado", async () => {
+    const id = contactId("Rafael Mendes");
+    await deactivateContact(id);
+
+    const updated = await updateContact(id, {
+      full_name: "Rafael Mendes Silva",
+      job_title: "Gerente",
+      is_primary: true,
+    });
+
+    expect(updated).toMatchObject({
+      id,
+      full_name: "Rafael Mendes Silva",
+      is_active: false,
+    });
+    expect(isActive(id)).toBe(0);
+    expect(await getContact(id)).toMatchObject({
+      full_name: "Rafael Mendes Silva",
+      is_active: false,
+    });
+    expect(
+      (await listContacts(null, null)).map((contact) => contact.full_name),
+    ).not.toContain("Rafael Mendes Silva");
+    expect(
+      (await listContacts("Rafael Mendes Silva", null, true)).map(
+        (contact) => contact.full_name,
+      ),
+    ).toEqual(["Rafael Mendes Silva"]);
   });
 });

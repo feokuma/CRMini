@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getContact, updateContact } from "@/lib/repositories/contacts";
+import { deactivateContact, getContact, reactivateContact, updateContact } from "@/lib/repositories/contacts";
 
 export const runtime = "nodejs";
 
@@ -30,5 +30,34 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   } catch (error) {
     console.error("Failed to update contact", error);
     return NextResponse.json({ error: "Não foi possível atualizar o contato." }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  let body: Record<string, unknown>;
+  try { body = await request.json(); } catch { return NextResponse.json({ error: "Dados inválidos." }, { status: 400 }); }
+  if (typeof body.is_active !== "boolean") return NextResponse.json({ error: "Informe se o contato está ativo." }, { status: 400 });
+  try {
+    if (!(await getContact(id)))
+      return NextResponse.json({ error: "Contato não encontrado." }, { status: 404 });
+    const found = body.is_active ? await reactivateContact(id) : await deactivateContact(id);
+    if (!found) return NextResponse.json({ error: "Contato não encontrado." }, { status: 404 });
+    const contact = await getContact(id);
+    return contact ? NextResponse.json(contact) : NextResponse.json({ error: "Contato não encontrado." }, { status: 404 });
+  } catch (error) {
+    console.error("Failed to change contact status", error);
+    return NextResponse.json({ error: "Não foi possível atualizar o status do contato." }, { status: 500 });
+  }
+}
+
+export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  try {
+    if (!(await deactivateContact(id))) return NextResponse.json({ error: "Contato não encontrado." }, { status: 404 });
+    return new NextResponse(null, { status: 204 });
+  } catch (error) {
+    console.error("Failed to deactivate contact", error);
+    return NextResponse.json({ error: "Não foi possível desativar o contato." }, { status: 500 });
   }
 }

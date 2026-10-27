@@ -69,7 +69,7 @@ export async function getDashboardMetrics(
   query: DashboardMetricsQuery,
 ): Promise<DashboardMetrics> {
   const result = await query(`SELECT
-    (SELECT COUNT(*) FROM contacts) AS contacts_count,
+    (SELECT COUNT(*) FROM contacts WHERE is_active = 1) AS contacts_count,
     (SELECT COUNT(*) FROM opportunities) AS opportunities_count,
     (SELECT COUNT(*) FROM opportunities WHERE status NOT IN ('Ganha', 'Perdida')) AS open_opportunities_count,
     (SELECT COUNT(*) FROM opportunities WHERE status = 'Ganha') AS won_count,

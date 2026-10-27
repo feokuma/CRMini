@@ -7,7 +7,8 @@ export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams.get("q")?.trim() || null;
   const industry = request.nextUrl.searchParams.get("segment")?.trim() || null;
   try {
-    return NextResponse.json(await listContacts(query, industry));
+    const includeInactive = ["1", "true"].includes(request.nextUrl.searchParams.get("include_inactive") || "");
+    return NextResponse.json(await listContacts(query, industry, includeInactive));
   } catch (error) {
     console.error("Failed to list contacts", error);
     return NextResponse.json(

@@ -6,6 +6,7 @@ vi.hoisted(() => {
 
 import { getDb } from "@/lib/db";
 import { createClient } from "./repositories/clients";
+import { deactivateContact } from "./repositories/contacts";
 import { createOpportunity } from "./repositories/opportunities";
 import {
   getDashboardMetrics,
@@ -83,6 +84,24 @@ describe("consultas do painel no SQLite", () => {
       conversionRate: 100,
       openValueByCurrency: { BRL: "1000.10", USD: "200.20" },
     });
+  });
+
+  it("conta apenas contatos ativos no painel", async () => {
+    const client = await createClient({
+      company_name: "Painel Soft Delete Ltda.",
+      contacts: [
+        { full_name: "Contato Ativo", is_primary: true },
+        { full_name: "Contato Inativo" },
+      ],
+    });
+    const inactive = getDb()
+      .prepare("SELECT id FROM contacts WHERE client_id = ? AND full_name = ?")
+      .get(client.id, "Contato Inativo") as { id: string };
+    await deactivateContact(inactive.id);
+
+    const metrics = await runMetrics();
+
+    expect(metrics.contactsCount).toBe(1);
   });
 
   it("retorna zeros e mapa vazio em banco vazio", async () => {

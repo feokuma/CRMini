@@ -35,7 +35,7 @@ describe("getDashboardMetrics", () => {
       conversionRate: 67,
       openValueByCurrency: { BRL: "1500.00", USD: "300.00" },
     });
-    expect(receivedQuery).toContain("FROM contacts");
+    expect(receivedQuery).toContain("FROM contacts WHERE is_active = 1");
     expect(receivedQuery).toContain("status NOT IN ('Ganha', 'Perdida')");
     expect(receivedQuery).toContain("json_group_array");
   });

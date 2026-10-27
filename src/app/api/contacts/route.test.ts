@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
-const { createContact } = vi.hoisted(() => ({ createContact: vi.fn() }));
-vi.mock("@/lib/repositories/contacts", () => ({ listContacts: vi.fn(), createContact }));
-import { POST } from "./route";
+const { createContact, listContacts } = vi.hoisted(() => ({
+  createContact: vi.fn(),
+  listContacts: vi.fn(),
+}));
+vi.mock("@/lib/repositories/contacts", () => ({ listContacts, createContact }));
+import { GET, POST } from "./route";
 
 function postRequest(body: unknown) {
   return new NextRequest("http://localhost/api/contacts", {
@@ -12,6 +15,65 @@ function postRequest(body: unknown) {
     body: JSON.stringify(body),
   });
 }
+
+function getRequest(query = "") {
+  return new NextRequest(`http://localhost/api/contacts${query}`);
+}
+
+describe("GET /api/contacts", () => {
+  beforeEach(() => {
+    listContacts.mockReset();
+    vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+
+  it("lista apenas contatos ativos por padrão", async () => {
+    listContacts.mockResolvedValue([{ id: "contact-1", is_active: true }]);
+
+    const response = await GET(getRequest());
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual([
+      { id: "contact-1", is_active: true },
+    ]);
+    expect(listContacts).toHaveBeenCalledWith(null, null, false);
+  });
+
+  it("inclui desativados quando include_inactive=1", async () => {
+    listContacts.mockResolvedValue([
+      { id: "contact-1", is_active: true },
+      { id: "contact-2", is_active: false },
+    ]);
+
+    const response = await GET(getRequest("?include_inactive=1"));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toHaveLength(2);
+    expect(listContacts).toHaveBeenCalledWith(null, null, true);
+  });
+
+  it("aceita include_inactive=true e repassa busca e segmento", async () => {
+    listContacts.mockResolvedValue([]);
+
+    const response = await GET(
+      getRequest("?include_inactive=true&q=alfa&segment=Ind%C3%BAstria"),
+    );
+
+    expect(response.status).toBe(200);
+    expect(listContacts).toHaveBeenCalledWith("alfa", "Indústria", true);
+  });
+
+  it("retorna 503 sem vazar detalhes quando o repositório falha", async () => {
+    listContacts.mockRejectedValue(new Error("database is locked"));
+
+    const response = await GET(getRequest());
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      error: "Não foi possível carregar os contatos.",
+    });
+    expect(console.error).toHaveBeenCalled();
+  });
+});
 
 describe("POST /api/contacts", () => {
   beforeEach(() => {

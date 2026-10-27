@@ -1,21 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
-const { updateClient, ClientContactsInUseError } = vi.hoisted(() => {
-  class ClientContactsInUseError extends Error {
-    constructor(contactNames: string[]) {
-      super(
-        `Não é possível remover contatos com tarefas ou oportunidades vinculadas: ${contactNames.join(", ")}.`,
-      );
-      this.name = "ClientContactsInUseError";
-    }
-  }
-  return { updateClient: vi.fn(), ClientContactsInUseError };
-});
+const { updateClient } = vi.hoisted(() => ({ updateClient: vi.fn() }));
 
 vi.mock("@/lib/repositories/clients", () => ({
   updateClient,
-  ClientContactsInUseError,
   getClient: vi.fn(),
   deactivateClient: vi.fn(),
 }));
@@ -35,22 +24,30 @@ const params = { params: Promise.resolve({ id: "client-1" }) };
 describe("PUT /api/clients/[id]", () => {
   beforeEach(() => {
     updateClient.mockReset();
+    vi.spyOn(console, "error").mockImplementation(() => {});
   });
 
-  it("retorna 409 quando a remoção de contato é bloqueada por vínculos", async () => {
-    updateClient.mockRejectedValue(
-      new ClientContactsInUseError(["Maria Silva"]),
-    );
+  it("aceita a remoção de contatos sem bloquear por vínculos", async () => {
+    updateClient.mockResolvedValue({
+      id: "client-1",
+      company_name: "Empresa",
+      contacts: [],
+    });
 
     const response = await PUT(
       putRequest({ company_name: "Empresa", contacts: [] }),
       params,
     );
 
-    expect(response.status).toBe(409);
+    expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
-      error:
-        "Não é possível remover contatos com tarefas ou oportunidades vinculadas: Maria Silva.",
+      id: "client-1",
+      company_name: "Empresa",
+      contacts: [],
+    });
+    expect(updateClient).toHaveBeenCalledWith("client-1", {
+      company_name: "Empresa",
+      contacts: [],
     });
   });
 
@@ -67,5 +64,20 @@ describe("PUT /api/clients/[id]", () => {
       id: "client-1",
       company_name: "Empresa",
     });
+  });
+
+  it("retorna 500 sem vazar detalhes quando o repositório falha", async () => {
+    updateClient.mockRejectedValue(new Error("database is locked"));
+
+    const response = await PUT(
+      putRequest({ company_name: "Empresa", contacts: [] }),
+      params,
+    );
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({
+      error: "Não foi possível atualizar o cliente.",
+    });
+    expect(console.error).toHaveBeenCalled();
   });
 });

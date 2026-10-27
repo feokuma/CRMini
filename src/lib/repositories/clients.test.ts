@@ -12,6 +12,7 @@ import {
   listClients,
   updateClient,
 } from "./clients";
+import { deactivateContact } from "./contacts";
 
 function cleanTables() {
   getDb().exec(
@@ -170,7 +171,7 @@ describe("updateClient", () => {
     ).not.toBe(maria.id);
   });
 
-  it("remove contatos ausentes do payload sem vínculos", async () => {
+  it("desativa contatos ausentes do payload sem apagar a linha", async () => {
     const client = await createClient(baseClient);
     const { client: stored } = await getClient(client.id);
     const maria = stored!.contacts.find(
@@ -185,6 +186,30 @@ describe("updateClient", () => {
     const { client: after } = await getClient(client.id);
     expect(after!.contacts).toHaveLength(1);
     expect(after!.contacts[0].id).toBe(maria.id);
+
+    const removed = getDb()
+      .prepare("SELECT full_name, is_active FROM contacts WHERE id = ?")
+      .get(
+        stored!.contacts.find(
+          (contact: any) => contact.full_name === "João Souza",
+        ).id,
+      ) as { full_name: string; is_active: number };
+    expect(removed).toEqual({ full_name: "João Souza", is_active: 0 });
+  });
+
+  it("aceita contato desativado após abrir formulário sem reativá-lo", async () => {
+    const client = await createClient(baseClient);
+    const { client: stored } = await getClient(client.id);
+    const maria = stored!.contacts.find((contact: any) => contact.full_name === "Maria Silva");
+    await deactivateContact(maria.id);
+
+    const updated = await updateClient(client.id, {
+      company_name: "Empresa Atualizada",
+      contacts: [{ ...maria, full_name: "Maria Silva Editada" }],
+    });
+
+    expect(updated!.company_name).toBe("Empresa Atualizada");
+    expect(getDb().prepare("SELECT is_active FROM contacts WHERE id = ?").get(maria.id)).toEqual({ is_active: 0 });
   });
 
   it.each([
@@ -197,6 +222,7 @@ describe("updateClient", () => {
              VALUES ('task-1', 'email', 'Retorno', '2026-10-25T12:00:00.000Z', ?, ?)`,
           )
           .run(clientId, contactId),
+      "SELECT contact_id FROM tasks WHERE id = 'task-1'",
     ],
     [
       "oportunidade",
@@ -207,10 +233,11 @@ describe("updateClient", () => {
              VALUES ('opp-1', 'Projeto', ?, ?)`,
           )
           .run(clientId, contactId),
+      "SELECT contact_id FROM opportunities WHERE id = 'opp-1'",
     ],
   ])(
-    "bloqueia a remoção de contato com %s vinculada sem deixar estado parcial",
-    async (_label, insertDependency) => {
+    "desativa contato com %s vinculada preservando linha e vínculo",
+    async (_label, insertDependency, dependencyQuery) => {
       const client = await createClient(baseClient);
       const { client: stored } = await getClient(client.id);
       const maria = stored!.contacts.find(
@@ -218,21 +245,63 @@ describe("updateClient", () => {
       );
       insertDependency(client.id, maria.id);
 
-      await expect(
-        updateClient(client.id, {
-          company_name: "Nome Não Aplicado",
-          contacts: [{ full_name: "Contato Substituto" }],
-        }),
-      ).rejects.toThrow(/tarefas ou oportunidades/i);
+      const updated = await updateClient(client.id, {
+        company_name: "Nome Aplicado",
+        contacts: [{ full_name: "Contato Substituto" }],
+      });
+
+      expect(updated!.company_name).toBe("Nome Aplicado");
 
       const { client: after } = await getClient(client.id);
-      expect(after!.company_name).toBe("Empresa Exemplo Ltda.");
-      expect(after!.contacts).toHaveLength(2);
-      expect(after!.contacts.map((contact: any) => contact.id).sort()).toEqual(
-        stored!.contacts.map((contact: any) => contact.id).sort(),
-      );
+      expect(after!.company_name).toBe("Nome Aplicado");
+      expect(after!.contacts).toHaveLength(1);
+      expect(after!.contacts[0].full_name).toBe("Contato Substituto");
+
+      const storedContact = getDb()
+        .prepare("SELECT full_name, is_active FROM contacts WHERE id = ?")
+        .get(maria.id) as { full_name: string; is_active: number };
+      expect(storedContact).toEqual({
+        full_name: "Maria Silva",
+        is_active: 0,
+      });
+
+      const dependency = getDb().prepare(dependencyQuery).get() as {
+        contact_id: string;
+      };
+      expect(dependency.contact_id).toBe(maria.id);
+
+      const activeRows = getDb()
+        .prepare(
+          "SELECT COUNT(*) AS n FROM contacts WHERE client_id = ? AND is_active = 1",
+        )
+        .get(client.id) as { n: number };
+      expect(activeRows.n).toBe(1);
     },
   );
+
+  it("ignora contatos desativados na busca e na listagem do cliente", async () => {
+    const client = await createClient(baseClient);
+    const { client: stored } = await getClient(client.id);
+    const maria = stored!.contacts.find(
+      (contact: any) => contact.full_name === "Maria Silva",
+    );
+
+    await deactivateContact(maria.id);
+
+    const { client: after } = await getClient(client.id);
+    expect(after!.contacts).toHaveLength(1);
+    expect(after!.contacts[0].full_name).toBe("João Souza");
+    expect(after!.contacts.map((contact: any) => contact.id)).not.toContain(
+      maria.id,
+    );
+
+    const all = await listClients(null);
+    expect(all[0].contacts).toHaveLength(1);
+    expect(all[0].contacts[0].full_name).toBe("João Souza");
+
+    expect(await listClients("maria")).toHaveLength(0);
+    expect(await listClients("Empresa Exemplo")).toHaveLength(1);
+  });
 
   it("atualiza dados da empresa e substitui os contatos", async () => {
     const client = await createClient(baseClient);
