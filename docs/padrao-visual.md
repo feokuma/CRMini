@@ -146,7 +146,7 @@ Barra de filtros: `.contact-filters` (fundo branco, borda `--line`, raio `6px`, 
 Lista de registros:
 
 - `.contact-list` — superfície branca, borda `--line`, raio `7px`.
-- `.contact-row` — grid de 5 colunas (`44px minmax(150px,1.1fr) minmax(155px,1fr) minmax(180px,1fr) 28px`), `min-height: 88px`, `padding: 14px 17px`, divisor inferior. A primeira coluna é avatar (`.contact-list-avatar`, `40px`, círculo `--accent-soft`).
+- `.contact-row` — grid de 6 colunas (`44px minmax(120px,1.1fr) minmax(120px,1fr) minmax(130px,1fr) 28px auto`), `min-height: 88px`, `padding: 14px 17px`, divisor inferior. A primeira coluna é avatar (`.contact-list-avatar`, `40px`, círculo `--accent-soft`); a última (`auto`) contém a ação de edição por linha (`text-link`).
 - Hierarquia interna: `b` com `12px/600` para o nome; `small`/`span` com `10px` e `#858b84` para metadados; rótulos de metadado com `9px`, caixa alta e `letter-spacing`.
 - Ações por linha: `text-link` para abrir detalhes; `filter-button` para ações secundárias (por exemplo, desativar). Ação destrutiva DEVE pedir confirmação.
 
