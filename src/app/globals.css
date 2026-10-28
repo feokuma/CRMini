@@ -554,6 +554,9 @@ td {
   .sidebar {
     width: 215px;
   }
+  .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .topbar {
     padding: 0 28px;
   }
@@ -1195,7 +1198,7 @@ main.records-page .company-logo img {
     padding: 10px 0;
   }
 }
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
   main.records-page .company-meta {
     grid-template-columns: 1fr;
     gap: 7px;
@@ -1268,7 +1271,7 @@ main.records-page .company-logo img {
 .contact-row {
   display: grid;
   grid-template-columns:
-    44px minmax(120px, 1.1fr) minmax(120px, 1fr) minmax(130px, 1fr)
+    44px minmax(96px, 1.1fr) minmax(100px, 1fr) minmax(110px, 1fr)
     28px auto;
   gap: 14px;
   align-items: center;
@@ -1419,33 +1422,41 @@ main.records-page .company-logo img {
 }
 @media (max-width: 900px) {
   .contact-row {
-    grid-template-columns: 42px minmax(150px, 1fr) minmax(150px, 1fr) 26px auto;
+    grid-template-columns: 42px minmax(0, 1fr) minmax(0, 1fr) 26px;
     gap: 11px;
+  }
+  .contact-list-person {
+    grid-column: 2;
+    grid-row: 1;
   }
   .contact-list-company {
     grid-column: 2;
+    grid-row: 2;
   }
   .contact-list-details {
     grid-column: 3;
+    grid-row: 2;
   }
   .linkedin-link,
   .linkedin-placeholder {
     grid-column: 4;
     grid-row: 1;
   }
-  .contact-list-person {
-    grid-column: 2;
-  }
   .contact-row > .contact-row-actions {
-    grid-column: 5;
-    grid-row: 1 / span 2;
-    align-self: center;
+    grid-column: 1 / -1;
+    grid-row: 3;
+    justify-self: start;
   }
-  .contact-list-company {
-    grid-row: 2;
+  .contact-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .contact-list-details {
-    grid-row: 2;
+  .contact-filters > input {
+    grid-column: 1 / -1;
+  }
+  .contact-filter-meta,
+  .contact-filters > .contact-count {
+    grid-column: 1 / -1;
+    justify-self: end;
   }
 }
 @media (max-width: 600px) {
@@ -1463,7 +1474,7 @@ main.records-page .company-logo img {
     justify-self: end;
   }
   .contact-row {
-    grid-template-columns: 38px minmax(0, 1fr) 28px auto;
+    grid-template-columns: 38px minmax(0, 1fr) 34px auto;
     padding: 13px;
     gap: 9px;
   }
@@ -1487,6 +1498,12 @@ main.records-page .company-logo img {
     grid-column: 3;
     grid-row: 1;
   }
+  .linkedin-link,
+  .linkedin-placeholder {
+    width: 32px;
+    height: 32px;
+    justify-self: start;
+  }
   .contact-list-company {
     grid-column: 2;
     grid-row: 2;
@@ -1501,6 +1518,17 @@ main.records-page .company-logo img {
   }
   .records-header .primary-button {
     align-self: flex-start;
+  }
+  .breadcrumbs a,
+  .records-header .text-link,
+  .contact-row-actions .text-link,
+  .client-row .text-link,
+  .contact-filters .contact-filter-toggle,
+  .task-status select,
+  .opportunity-status select {
+    display: inline-flex;
+    align-items: center;
+    min-height: 38px;
   }
 }
 
@@ -1629,13 +1657,15 @@ main.records-page .company-logo img {
   .opportunity-table-row {
     min-width: 1050px;
   }
-}
-@media (max-width: 900px) {
   .opportunity-filters {
     grid-template-columns: minmax(0, 1fr) minmax(170px, 220px);
   }
   .opportunity-filters > input {
     grid-column: 1/-1;
+  }
+  .opportunity-filters .contact-count {
+    grid-column: 1 / -1;
+    justify-self: end;
   }
 }
 @media (max-width: 600px) {
@@ -1756,8 +1786,8 @@ main.records-page .company-logo img {
 .task-list-header {
   display: grid;
   grid-template-columns:
-    44px minmax(150px, 1.1fr) minmax(155px, 1fr) minmax(120px, 0.7fr)
-    minmax(112px, 132px);
+    44px minmax(96px, 1.1fr) minmax(100px, 1fr) minmax(92px, 0.7fr)
+    minmax(100px, 132px);
   gap: 14px;
   align-items: center;
   padding: 10px 17px;
@@ -1782,39 +1812,15 @@ main.records-page .company-logo img {
 }
 .task-row {
   grid-template-columns:
-    44px minmax(150px, 1.1fr) minmax(155px, 1fr) minmax(120px, 0.7fr)
-    minmax(112px, 132px);
+    44px minmax(96px, 1.1fr) minmax(100px, 1fr) minmax(92px, 0.7fr)
+    minmax(100px, 132px);
 }
 .task-date {
   font-size: 11px;
   color: #666;
   white-space: nowrap;
 }
-@media (max-width: 600px) {
-  .task-status {
-    grid-column: 2;
-    grid-row: 3;
-    justify-content: flex-start;
-  }
-  .task-status select {
-    max-width: 100%;
-  }
-}
 @media (max-width: 900px) {
-  .task-row {
-    grid-template-columns:
-      42px minmax(120px, 1.1fr) minmax(130px, 1fr) minmax(112px, 0.8fr)
-      120px;
-    gap: 11px;
-  }
-  .task-list-header {
-    grid-template-columns:
-      42px minmax(120px, 1.1fr) minmax(130px, 1fr) minmax(112px, 0.8fr)
-      120px;
-    gap: 11px;
-  }
-}
-@media (max-width: 600px) {
   .task-list-header {
     display: none;
   }
@@ -1855,9 +1861,10 @@ main.records-page .company-logo img {
 .sidebar {
   position: sticky;
   top: 0;
-  height: 100vh;
+  height: 100dvh;
   min-height: 0;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   gap: 22px;
   padding: 24px 16px;
 }
@@ -1906,6 +1913,10 @@ main.records-page .company-logo img {
     align-items: center;
   }
   .sidebar .brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
     padding: 0;
   }
   .sidebar .brand-name {

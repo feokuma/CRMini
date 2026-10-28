@@ -242,13 +242,13 @@ Telas de detalhe e de preferências usam exatamente o mesmo esqueleto da seção
 
 Breakpoints reais do projeto: `1100px`, `900px`, `680px`, `600px` e `min-width: 901px`. NÃO invente novos breakpoints.
 
-| Largura    | Comportamento esperado                                                                 |
-| ---------- | -------------------------------------------------------------------------------------- |
-| `≤ 1100px` | Grade de oportunidades passa a rolar horizontalmente (exceção justificada, ver abaixo) |
-| `≤ 900px`  | Sidebar `215px`; linhas de contato reorganizam avatar/nome/empresa/detalhes            |
-| `≤ 680px`  | Sidebar `62px`; `form-grid` em 1 coluna; `h1` `25px`; `form-actions` com menos padding |
-| `≤ 600px`  | Filtros em 1 coluna; listas viram blocos empilhados; cabeçalho de tabela oculto        |
-| `≥ 901px`  | `.metric-grid` do painel em 4 colunas                                                  |
+| Largura    | Comportamento esperado                                                                                                                              |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `≤ 1100px` | Grade de oportunidades rola horizontalmente (exceção justificada), seus filtros passam a 2 colunas e a linha de clientes quebra em duas linhas      |
+| `≤ 900px`  | Sidebar `215px`; linha de contato em 4 colunas com as ações em linha própria; filtros de contatos/tarefas em 2 colunas; `.metric-grid` em 2 colunas |
+| `≤ 680px`  | Sidebar `62px`; `form-grid` em 1 coluna; `h1` `25px`; `form-actions` com menos padding; `.metric-grid` em 1 coluna                                  |
+| `≤ 600px`  | Filtros em 1 coluna; listas viram blocos empilhados; cabeçalho de tabela oculto; alvos de toque com pelo menos `38px` de altura                     |
+| `≥ 901px`  | `.metric-grid` do painel em 4 colunas                                                                                                               |
 
 Regras:
 
@@ -256,6 +256,10 @@ Regras:
 - Formulários SEMPRE em uma coluna até `680px`; o botão de envio pode ocupar a largura total.
 - A grade de oportunidades é a única exceção de overflow, por ter 8 colunas: role horizontalmente até `1100px`, oculte o cabeçalho e exiba cada célula como card com `data-label` em `≤ 600px`.
 - NÃO use `position: fixed` para ações; o padrão é `sticky` no `.form-actions`.
+- Listas de contatos e de tarefas NÃO DEVEM depender de `overflow: hidden` para esconder colunas: em `≤ 900px` a linha de contato usa 4 colunas e as ações ocupam uma linha própria; em `≤ 600px` a linha vira bloco empilhado.
+- Filtros DEVEM reduzir para 2 colunas flexíveis em `≤ 900px` e para 1 coluna em `≤ 600px`; nenhum controle pode manter `minmax()` com mínimo fixo que estoure a viewport.
+- A sidebar usa `height: 100dvh` com rolagem vertical própria, para continuar navegável em viewports baixas.
+- Alvos de toque (links de ação, breadcrumbs, checkbox de filtro, `select` de status) DEVEM ter pelo menos `38px` de altura em `≤ 600px`.
 
 ## 12. Acessibilidade
 
