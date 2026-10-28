@@ -9,6 +9,7 @@
     "start": "next start",
     "prepare:standalone": "node scripts/prepare-standalone.cjs",
     "check:electron-abi": "node scripts/check-electron-abi.cjs",
+    "layout:check": "node scripts/layout-check.cjs",
     "desktop:build": "npm run build && npm run prepare:standalone",
     "desktop": "npm run desktop:build && npm run check:electron-abi && electron electron/main.cjs",
     "desktop:dev": "electron electron/main.cjs --dev",

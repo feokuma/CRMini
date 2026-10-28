@@ -102,6 +102,22 @@ npm run build
 
 Depois do build, a versão de produção pode ser iniciada com `npm run start`.
 
+## Verificação de responsividade
+
+A checagem de responsividade é manual e opcional: abre cada rota no Chromium do Electron em modo headless, redimensiona a janela e reporta overflow de página e conteúdo cortado nas listagens (`.contact-row-actions` e `.task-status`). Ela precisa de um servidor da aplicação rodando em paralelo — inicie `npm run dev` em outro terminal — e não faz parte de `npm test`. O Chromium usado é o do Electron, então as dependências de desenvolvimento precisam estar instaladas:
+
+```bash
+npm run layout:check
+```
+
+Para apontar para outra instância, defina `LAYOUT_BASE_URL` (padrão `http://localhost:3000`):
+
+```bash
+LAYOUT_BASE_URL=http://localhost:3001 npm run layout:check
+```
+
+O comando imprime uma linha por problema com rota, largura e medida, termina com `X verificações, Y problemas` e sai com código 1 se algo falhar. Listagens vazias impedem a medição de conteúdo cortado; rode `npm run db:seed` para usar os dados de demonstração.
+
 ## Estrutura
 
 - `src/app/page.tsx`: visão geral do CRM.
