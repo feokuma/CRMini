@@ -35,11 +35,14 @@
 
 ## Testes e validação
 
-- O projeto usa Vitest + React Testing Library; os testes ficam próximos aos módulos em `src/` ou na pasta `tests/`. Execute `npm test` para rodar a suíte completa e `npm run test:components` para executar o alias mantido para Vitest.
+- O projeto usa Vitest + React Testing Library; os testes ficam próximos aos módulos em `src/**/*.test.{ts,tsx}` (o `include` do Vitest cobre apenas `src/`). Execute `npm test` para rodar a suíte completa e `npm run test:components` para executar o alias mantido para Vitest.
 - Toda alteração de comportamento ou regra de negócio deve incluir ou atualizar testes automatizados para sucesso, validação e casos-limite relevantes.
 - Testes automatizados são obrigatórios para toda mudança funcional (incluindo correções e refatorações que alterem comportamento); não finalize sem cobertura correspondente. Lint, build e revisão manual não substituem testes.
-- Quando aplicável, valide também com `npm run lint` e `npm run build`. Relate com precisão quais comandos foram executados e seus resultados.
-- Para funcionalidades que dependam de banco, prefira testes isolados para a lógica de domínio; não assuma que os testes existentes iniciam serviços externos.
+- A cobertura é medida com `npm run coverage` (Vitest + V8), com relatório em texto e HTML em `coverage/` e pisos mínimos configurados em `vitest.config.mts` (statements 80, branches 82, functions 72, lines 81). O comando falha se a cobertura ficar abaixo dos pisos.
+- Toda funcionalidade, endpoint, página ou regra nova deve vir com testes que a cubram: endpoints com status HTTP, mensagens de erro e chamada ao repositório; páginas com renderização e repasse de props/params; regras de domínio com sucesso, validação e limites. Se não for possível testar algo, registre o motivo explicitamente em vez de omitir.
+- Não reduza os pisos de cobertura nem exclua arquivos do relatório para fazer a suíte passar; quando a cobertura subir de forma sustentada, eleve os pisos. Não crie testes que apenas verificam a existência de código (ex.: leitura de fonte com regex) ou que duplicam o teste de outro módulo.
+- Testes de rota devem mockar os repositórios; regras de persistência e SQL ficam nos testes de repositório, com SQLite `:memory:` isolado.
+- Antes de finalizar, rode `npm test`, `npm run coverage` e `npm run lint`; quando aplicável, valide também com `npm run build`. Relate com precisão quais comandos foram executados, os números de cobertura e seus resultados.
 
 ## Princípios de mudança
 

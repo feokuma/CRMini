@@ -83,7 +83,15 @@ Execute os testes automatizados (não precisam de serviços externos) com Vitest
 npm test
 ```
 
-Os testes ficam próximos aos módulos em `src/` ou na pasta `tests/`. `npm run test:components` também executa a suíte Vitest completa. Os testes de repositório usam um banco SQLite em memória, isolado do banco local.
+Os testes ficam próximos aos módulos em `src/` e são descobertos por `src/**/*.test.{ts,tsx}`. `npm run test:components` também executa a suíte Vitest completa. Os testes de repositório usam um banco SQLite em memória, isolado do banco local.
+
+Para medir a cobertura (Vitest + V8, relatório em texto e HTML em `coverage/`):
+
+```bash
+npm run coverage
+```
+
+O comando aplica os pisos mínimos configurados em `vitest.config.mts` (statements 80, branches 82, functions 72, lines 81) e falha se a cobertura ficar abaixo deles. Ao adicionar testes que elevem a cobertura de forma sustentada, atualize os pisos no mesmo commit.
 
 Para verificar o lint e gerar a versão de produção:
 
