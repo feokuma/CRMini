@@ -9,6 +9,7 @@ export default [
     ignores: [
       ".next/**",
       ".next-dev/**",
+      "coverage/**",
       "out/**",
       "build/**",
       "next-env.d.ts",
