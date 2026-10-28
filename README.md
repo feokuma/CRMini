@@ -40,16 +40,17 @@ Para desenvolver na janela desktop, use:
 npm run desktop:dev
 ```
 
-Esse comando inicia o Electron com `next dev`. Alterações no código do Next.js são atualizadas automaticamente, sem executar `npm run build`. Encerre outras instâncias do CRM antes de iniciar, pois o app usa a porta `3174`.
+Esse comando inicia o Electron com `next dev`. Alterações no código do Next.js são atualizadas automaticamente, sem executar `npm run build`. Encerre outras instâncias do CRM antes de iniciar.
 
-Para executar o servidor de produção dentro do Electron:
+Para executar a versão de produção dentro do Electron:
 
 ```bash
-npm run build
 npm run desktop
 ```
 
-O comando `npm run desktop` inicia `next start` e não gera um build. Portanto, depois de alterar o Next.js, execute `npm run build` novamente antes de abrir a versão de produção. Alterações no código do Electron exigem reiniciar o aplicativo. Veja também [electron/README.md](./electron/README.md).
+O comando `npm run desktop` executa `desktop:build` (equivalente a `npm run build && npm run prepare:standalone`) e, em seguida, inicia o Electron servindo o build standalone (`.next/standalone/server.js`). Ele sempre gera o build antes de abrir a janela. Alterações no código do Electron exigem reiniciar o aplicativo. Veja também [electron/README.md](./electron/README.md).
+
+O servidor standalone roda sob `ELECTRON_RUN_AS_NODE`. O `better-sqlite3` 13 usa prebuilds N-API (`prebuilds/<plataforma>-<arch>.node`), compatíveis com Node e Electron, então não é preciso reconstruir o módulo para cada runtime. O comando `npm run desktop` executa `npm run check:electron-abi` antes de abrir a janela e falha com uma mensagem explícita se o prebuild da plataforma não carregar.
 
 ## Banco de dados e migrations
 
