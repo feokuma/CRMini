@@ -13,6 +13,10 @@ import { getDashboardDate, getGreeting } from "@/lib/greeting";
 
 const avatarColors = ["peach", "blue", "green", "lilac"];
 
+// O dashboard lê o banco a cada requisição: sem isso o build pré-renderiza a
+// página e o app empacotado serviria um snapshot estático dos dados.
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   let opportunities: RecentOpportunity[] = [];
   let stats = {

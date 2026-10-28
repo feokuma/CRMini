@@ -15,11 +15,15 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
-import Home from "./page";
+import Home, { dynamic } from "./page";
 
 afterEach(() => cleanup());
 
 describe("Visão geral", () => {
+  it("força renderização dinâmica para não servir snapshot do build", () => {
+    expect(dynamic).toBe("force-dynamic");
+  });
+
   it("leva ao formulário de cadastro ao selecionar Novo contato", async () => {
     render(await Home());
 
