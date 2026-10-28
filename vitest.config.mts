@@ -12,5 +12,18 @@ export default defineConfig({
     setupFiles: ["./vitest.setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
     restoreMocks: true,
+    coverage: {
+      provider: "v8",
+      include: ["src/**/*.{ts,tsx}", "electron/**/*.cjs", "scripts/**/*.cjs"],
+      exclude: ["**/*.test.*", "**/*.d.ts", "src/types/**"],
+      reporter: ["text", "html", "json-summary"],
+      reportsDirectory: "./coverage",
+      thresholds: {
+        statements: 70,
+        branches: 72,
+        functions: 66,
+        lines: 70,
+      },
+    },
   },
 });
