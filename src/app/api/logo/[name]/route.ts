@@ -18,7 +18,12 @@ export async function GET(
     return new NextResponse(null, { status: 404 });
   try {
     const image = await readFile(
-      path.join(process.cwd(), "tmp", "assets", name),
+      path.join(
+        process.env.CRM_DATA_DIR ?? process.cwd(),
+        "tmp",
+        "assets",
+        name,
+      ),
     );
     return new NextResponse(image, {
       headers: {

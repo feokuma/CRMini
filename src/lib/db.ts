@@ -4,7 +4,10 @@ import Database from "better-sqlite3";
 import { normalizeSearch } from "@/lib/normalize-search";
 import { phoneDigits } from "@/lib/phone";
 
-const databaseDir = path.join(process.cwd(), "database");
+const databaseDir = path.join(
+  process.env.CRM_RESOURCES_DIR || process.cwd(),
+  "database",
+);
 const paths =
   require("../../database/sqlite-paths.cjs") as typeof import("../../database/sqlite-paths.cjs");
 const migrations =

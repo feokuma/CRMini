@@ -4,7 +4,6 @@ import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
-const assetDir = path.join(process.cwd(), "tmp", "assets");
 const mimeExtensions: Record<string, string> = {
   "image/png": "png",
   "image/jpeg": "jpg",
@@ -30,6 +29,11 @@ export async function POST(request: NextRequest) {
       { error: "A imagem deve ter no máximo 2 MB." },
       { status: 400 },
     );
+  const assetDir = path.join(
+    process.env.CRM_DATA_DIR ?? process.cwd(),
+    "tmp",
+    "assets",
+  );
   await mkdir(assetDir, { recursive: true });
   const name = `${randomUUID()}.${extension}`;
   await writeFile(
