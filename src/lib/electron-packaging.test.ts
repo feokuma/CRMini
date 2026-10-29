@@ -410,6 +410,8 @@ describe("electron-builder: canal de atualização", () => {
       expect(publication).toContain("fail_on_unmatched_files: true");
       expect(publication).toContain("draft: false");
       expect(publication).toContain("prerelease: false");
+      // Sem isso a release sai sem descrição e alguém precisa editar à mão.
+      expect(publication).toContain("generate_release_notes: true");
     });
 
     it("mantém o metadata também no artefato do workflow_dispatch", () => {

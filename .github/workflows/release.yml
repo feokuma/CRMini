@@ -165,3 +165,6 @@ jobs:
           fail_on_unmatched_files: true
           draft: false
           prerelease: false
+          # Notas geradas a partir dos commits desde a release anterior; antes o
+          # corpo saía vazio e exigia edição manual.
+          generate_release_notes: true
