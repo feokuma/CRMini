@@ -1,7 +1,5 @@
-import { randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
+import { saveLogo } from "@/lib/logo-assets";
 
 export const runtime = "nodejs";
 const mimeExtensions: Record<string, string> = {
@@ -29,16 +27,19 @@ export async function POST(request: NextRequest) {
       { error: "A imagem deve ter no máximo 2 MB." },
       { status: 400 },
     );
-  const assetDir = path.join(
-    process.env.CRM_DATA_DIR ?? process.cwd(),
-    "tmp",
-    "assets",
-  );
-  await mkdir(assetDir, { recursive: true });
-  const name = `${randomUUID()}.${extension}`;
-  await writeFile(
-    path.join(assetDir, name),
-    Buffer.from(await file.arrayBuffer()),
-  );
-  return NextResponse.json({ logo_path: `/api/logo/${name}` });
+  try {
+    const logoPath = await saveLogo(
+      new Uint8Array(await file.arrayBuffer()),
+      extension,
+    );
+    return NextResponse.json({ logo_path: logoPath });
+  } catch {
+    return NextResponse.json(
+      {
+        error:
+          "Não foi possível salvar a imagem. Verifique se a pasta do banco está disponível e gravável.",
+      },
+      { status: 500 },
+    );
+  }
 }

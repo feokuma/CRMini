@@ -1,6 +1,5 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { NextResponse } from "next/server";
+import { isAllowedLogoName, readLogo } from "@/lib/logo-assets";
 
 export const runtime = "nodejs";
 const contentTypes: Record<string, string> = {
@@ -14,24 +13,15 @@ export async function GET(
   { params }: { params: Promise<{ name: string }> },
 ) {
   const { name } = await params;
-  if (!/^[\w-]+\.(png|jpg|webp)$/.test(name))
+  if (!isAllowedLogoName(name))
     return new NextResponse(null, { status: 404 });
-  try {
-    const image = await readFile(
-      path.join(
-        process.env.CRM_DATA_DIR ?? process.cwd(),
-        "tmp",
-        "assets",
-        name,
-      ),
-    );
-    return new NextResponse(image, {
-      headers: {
-        "Content-Type": contentTypes[name.split(".").pop()!],
-        "Cache-Control": "public, max-age=3600",
-      },
-    });
-  } catch {
-    return new NextResponse(null, { status: 404 });
-  }
+  const image = await readLogo(name);
+  if (image === null) return new NextResponse(null, { status: 404 });
+  // `Uint8Array` é um `ArrayBufferView` aceito pelo `BodyInit`; `Buffer` não é.
+  return new NextResponse(new Uint8Array(image), {
+    headers: {
+      "Content-Type": contentTypes[name.split(".").pop() ?? "png"],
+      "Cache-Control": "public, max-age=3600",
+    },
+  });
 }

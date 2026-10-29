@@ -2,21 +2,32 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { writeFile } from "node:fs/promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { POST } from "./route";
 import { GET } from "./[name]/route";
 
-let dataDir: string;
+vi.mock("node:fs/promises", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:fs/promises")>();
+  return { ...actual, writeFile: vi.fn(actual.writeFile) };
+});
+
+let tmpDir: string;
+let assetsDir: string;
+let legacyDir: string;
 
 beforeEach(() => {
-  dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "crm-logo-"));
-  vi.stubEnv("CRM_DATA_DIR", dataDir);
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "crm-logo-"));
+  assetsDir = path.join(tmpDir, "assets");
+  legacyDir = path.join(tmpDir, "data", "tmp", "assets");
+  vi.stubEnv("CRM_ASSETS_DIR", assetsDir);
+  vi.stubEnv("CRM_DATA_DIR", path.join(tmpDir, "data"));
 });
 
 afterEach(() => {
   vi.unstubAllEnvs();
-  fs.rmSync(dataDir, { recursive: true, force: true });
+  fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
 function postRequest(file: { name: string; type: string; content: Uint8Array }) {
@@ -31,7 +42,7 @@ function postRequest(file: { name: string; type: string; content: Uint8Array }) 
 const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
 describe("POST /api/logo", () => {
-  it("grava o arquivo em CRM_DATA_DIR/tmp/assets e retorna logo_path", async () => {
+  it("grava o arquivo em CRM_ASSETS_DIR e retorna logo_path", async () => {
     const response = await POST(
       postRequest({ name: "logo.png", type: "image/png", content: PNG_BYTES }),
     );
@@ -41,9 +52,34 @@ describe("POST /api/logo", () => {
     expect(json.logo_path).toMatch(/^\/api\/logo\/[\w-]+\.png$/);
 
     const name = json.logo_path.split("/").pop();
-    const written = path.join(dataDir, "tmp", "assets", name);
+    const written = path.join(assetsDir, name);
     expect(fs.existsSync(written)).toBe(true);
     expect(fs.readFileSync(written)).toEqual(Buffer.from(PNG_BYTES));
+  });
+
+  it("CRM_ASSETS_DIR tem precedência sobre CRM_DATA_DIR na escrita", async () => {
+    const response = await POST(
+      postRequest({ name: "logo.png", type: "image/png", content: PNG_BYTES }),
+    );
+
+    const json = await response.json();
+    const name = json.logo_path.split("/").pop();
+    expect(fs.existsSync(path.join(assetsDir, name))).toBe(true);
+    expect(fs.existsSync(path.join(legacyDir, name))).toBe(false);
+  });
+
+  it("retorna 500 com mensagem quando a escrita falha", async () => {
+    vi.mocked(writeFile).mockRejectedValueOnce(new Error("pasta indisponível"));
+
+    const response = await POST(
+      postRequest({ name: "logo.png", type: "image/png", content: PNG_BYTES }),
+    );
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({
+      error:
+        "Não foi possível salvar a imagem. Verifique se a pasta do banco está disponível e gravável.",
+    });
   });
 
   it("rejeita quando nenhum arquivo é enviado", async () => {
@@ -84,7 +120,7 @@ describe("POST /api/logo", () => {
 });
 
 describe("GET /api/logo/[name]", () => {
-  it("lê o arquivo gravado de CRM_DATA_DIR/tmp/assets", async () => {
+  it("lê o arquivo gravado de CRM_ASSETS_DIR", async () => {
     const postResponse = await POST(
       postRequest({ name: "logo.png", type: "image/png", content: PNG_BYTES }),
     );
@@ -98,6 +134,22 @@ describe("GET /api/logo/[name]", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toBe("image/png");
+    expect(Buffer.from(await response.arrayBuffer())).toEqual(
+      Buffer.from(PNG_BYTES),
+    );
+  });
+
+  it("serve arquivo do diretório legado CRM_DATA_DIR/tmp/assets", async () => {
+    const name = "legado.png";
+    fs.mkdirSync(legacyDir, { recursive: true });
+    fs.writeFileSync(path.join(legacyDir, name), Buffer.from(PNG_BYTES));
+
+    const response = await GET(
+      new NextRequest(`http://localhost/api/logo/${name}`),
+      { params: Promise.resolve({ name }) },
+    );
+
+    expect(response.status).toBe(200);
     expect(Buffer.from(await response.arrayBuffer())).toEqual(
       Buffer.from(PNG_BYTES),
     );
