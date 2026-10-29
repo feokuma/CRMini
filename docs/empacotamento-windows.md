@@ -112,7 +112,7 @@ Pontos confirmados por inspeção; correções ao contexto previamente levantado
 
 ### 3.1 Layout do aplicativo instalado
 
-Instalação per-user (NSIS `oneClick`), base em `%LOCALAPPDATA%\Programs\crmini`:
+Instalação per-user (NSIS `oneClick`), base em `%LOCALAPPDATA%\Programs\CRMini`:
 
 ```
 <installdir>/
@@ -137,12 +137,17 @@ Instalação per-user (NSIS `oneClick`), base em `%LOCALAPPDATA%\Programs\crmini
 Dados do usuário (graváveis, sobrevivem a reinstalação):
 
 ```
-%APPDATA%\crmini\               # app.getPath("userData")
+%APPDATA%\crmini\               # app.getPath("userData"), do `name` do package.json
 ├── preferences.json            # databasePath escolhido (já existe hoje)
 ├── crm.sqlite (default)        # banco padrão, ou caminho escolhido pelo usuário
 ├── crm.sqlite.bak-*            # backups de migration
 └── assets\                     # logos enviados, ao lado do banco em uso
 ```
+
+O nome da pasta (`crmini`) vem de `app.getName()`, que lê o `name` do `package.json`; o
+`build.productName` (`CRMini`) nomeia exe, atalhos, instalador e feed de release, mas não o
+`userData`. Padronizar a pasta exigiria migrar banco, preferências e logos das instalações
+existentes.
 
 ### 3.2 Fluxo de inicialização (empacotado)
 
@@ -549,9 +554,9 @@ gravável. O mapeamento recomendado (convenções do Windows para app per-user):
 | Conteúdo                                                      | Diretório                                                       | Como é definido                       | Gravável?                                       |
 | ------------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------- | ----------------------------------------------- |
 | `CRMini.exe`, `resources/` (asar + standalone), desinstalador | `%LOCALAPPDATA%\Programs\CRMini`                                | NSIS `oneClick` + `perMachine: false` | Não (usuário pode escrever, mas o app não deve) |
-| Banco SQLite, backups `.bak-*`                                | `%APPDATA%\CRMini`                                              | `app.getPath("userData")`             | Sim                                             |
-| `preferences.json` (caminho do banco)                         | `%APPDATA%\CRMini`                                              | `app.getPath("userData")`             | Sim                                             |
-| Logos enviados                                                | `<pasta do banco>\assets` (`%APPDATA%\CRMini\assets` no padrão) | `CRM_ASSETS_DIR`                      | Sim                                             |
+| Banco SQLite, backups `.bak-*`                                | `%APPDATA%\crmini`                                              | `app.getPath("userData")`             | Sim                                             |
+| `preferences.json` (caminho do banco)                         | `%APPDATA%\crmini`                                              | `app.getPath("userData")`             | Sim                                             |
+| Logos enviados                                                | `<pasta do banco>\assets` (`%APPDATA%\crmini\assets` no padrão) | `CRM_ASSETS_DIR`                      | Sim                                             |
 | `database/init.sql`, `migrations/`                            | `resources\app\database`                                        | `CRM_RESOURCES_DIR`                   | Somente leitura                                 |
 
 Comportamento esperado do instalador:
@@ -563,11 +568,11 @@ Comportamento esperado do instalador:
 - **Apps e recursos**: desinstalador registrado em `HKCU\...\Uninstall` (aparece em
   "Aplicativos instalados"), com nome, versão (de `package.json`) e fabricante.
 - **Atualização/reinstalação**: instalar uma versão nova por cima substitui os binários e
-  **preserva** `%APPDATA%\CRMini`; o banco e as preferências continuam válidos.
+  **preserva** `%APPDATA%\crmini`; o banco e as preferências continuam válidos.
 - **Desinstalação**: remove binários/atalhos/registro e **não apaga** `userData`
   (`deleteAppDataOnUninstall: false`).
 - **Portable**: não instala nada; extrai o app para `%TEMP%` a cada execução e continua usando
-  `%APPDATA%\CRMini` para dados. Não cria atalhos nem entrada de desinstalação.
+  `%APPDATA%\crmini` para dados. Não cria atalhos nem entrada de desinstalação.
 - **Instância única**: o lock no `main.cjs` evita dois processos sobre o mesmo banco; o NSIS
   também encerra a instância em execução antes de atualizar.
 
