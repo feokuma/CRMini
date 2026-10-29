@@ -81,7 +81,7 @@ O banco é um arquivo SQLite local no diretório de dados do usuário (configur�
 
 Os logos enviados ficam em `assets/` na mesma pasta do banco em uso (Configurações exibe o caminho). Para backup ou para levar o CRM a outro computador, copie o arquivo `<pasta>/crm.sqlite` (encerre o app antes) junto da pasta `<pasta>/assets/`; copiar só o banco deixa as imagens para trás.
 
-A pasta de dados do aplicativo desktop é `%APPDATA%\CRMini` (`~/.config/CRMini` no Linux); instalações anteriores, que usavam `crmini`, são migradas automaticamente na primeira abertura. Em Windows e macOS as duas grafias apontam para a mesma pasta.
+A pasta de dados do aplicativo desktop é `%APPDATA%\CRMini` (`~/.config/CRMini` no Linux).
 
 Para inserir os dados de demonstração (três empresas, seus contatos e oportunidades de exemplo), execute:
 

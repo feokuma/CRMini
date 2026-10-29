@@ -144,11 +144,9 @@ Dados do usuário (graváveis, sobrevivem a reinstalação):
 └── assets\                     # logos enviados, ao lado do banco em uso
 ```
 
-O nome da pasta vem de `app.getName()`, que passa a valer `CRMini` por causa do
-`productName` na raiz do `package.json` e do `app.setName("CRMini")` no `main.cjs`. Instalações
-antigas usavam `crmini`; na primeira abertura o app migra a pasta (`rename`, ou cópia mantendo a
-antiga em caso de falha). Em Windows/macOS, onde o sistema de arquivos é case-insensitive,
-`crmini` e `CRMini` já são a mesma pasta e nada é movido.
+O nome da pasta vem de `app.getName()`, que vale `CRMini` por causa do `productName` na raiz do
+`package.json` e do `app.setName("CRMini")` no `main.cjs`. Como nenhuma versão publicada usou
+outro nome, não existe migração de pasta: instalações novas já nascem em `CRMini`.
 
 ### 3.2 Fluxo de inicialização (empacotado)
 

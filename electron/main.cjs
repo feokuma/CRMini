@@ -12,10 +12,6 @@ const {
   moveLegacyAssets,
 } = require("./assets-paths.cjs");
 const { createUpdater, registerUpdaterIpc } = require("./updater.cjs");
-const {
-  legacyUserDataDir,
-  migrateLegacyUserData,
-} = require("./user-data.cjs");
 
 // O nome do app define `userData` (`app.getName()`). Sem isto, o pacote usa o
 // `name` do package.json ("crmini") e cai em `%APPDATA%\crmini` em vez de
@@ -25,28 +21,6 @@ app.setName("CRMini");
 const host = "127.0.0.1";
 const isDevelopment = process.argv.includes("--dev");
 const resourcesDir = standaloneDir({ app, isDevelopment, dirname: __dirname });
-const appDataDir = app.getPath("appData");
-
-// Migra a pasta legada (`appData/crmini`) para a nova (`appData/CRMini`) uma
-// única vez, antes de qualquer uso do `userData`.
-const migration = migrateLegacyUserData({
-  appDataDir,
-  userDataDir: app.getPath("userData"),
-});
-if (migration.reason === "failed") {
-  // Fallback seguro: continua com a pasta antiga e tenta migrar de novo na
-  // próxima abertura, sem bloquear o app com `dialog`/`quit`.
-  console.warn(
-    `Falha ao migrar os dados para "${app.getPath("userData")}": ${migration.error?.message}; usando a pasta antiga "${legacyUserDataDir(appDataDir)}".`,
-  );
-  app.setPath("userData", legacyUserDataDir(appDataDir));
-} else if (migration.reason === "copied") {
-  // O módulo já registra o aviso de preservação; aqui só informa a pasta nova.
-  console.log(
-    `Dados copiados de "${legacyUserDataDir(appDataDir)}" para "${app.getPath("userData")}".`,
-  );
-}
-
 const dataDir = app.getPath("userData");
 let mainWindow;
 // Uma falha ao parar o servidor não pode prender o app no `before-quit`; ela
