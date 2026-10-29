@@ -137,17 +137,18 @@ Instalação per-user (NSIS `oneClick`), base em `%LOCALAPPDATA%\Programs\CRMini
 Dados do usuário (graváveis, sobrevivem a reinstalação):
 
 ```
-%APPDATA%\crmini\               # app.getPath("userData"), do `name` do package.json
+%APPDATA%\CRMini\               # app.getPath("userData"), do productName na raiz
 ├── preferences.json            # databasePath escolhido (já existe hoje)
 ├── crm.sqlite (default)        # banco padrão, ou caminho escolhido pelo usuário
 ├── crm.sqlite.bak-*            # backups de migration
 └── assets\                     # logos enviados, ao lado do banco em uso
 ```
 
-O nome da pasta (`crmini`) vem de `app.getName()`, que lê o `name` do `package.json`; o
-`build.productName` (`CRMini`) nomeia exe, atalhos, instalador e feed de release, mas não o
-`userData`. Padronizar a pasta exigiria migrar banco, preferências e logos das instalações
-existentes.
+O nome da pasta vem de `app.getName()`, que passa a valer `CRMini` por causa do
+`productName` na raiz do `package.json` e do `app.setName("CRMini")` no `main.cjs`. Instalações
+antigas usavam `crmini`; na primeira abertura o app migra a pasta (`rename`, ou cópia mantendo a
+antiga em caso de falha). Em Windows/macOS, onde o sistema de arquivos é case-insensitive,
+`crmini` e `CRMini` já são a mesma pasta e nada é movido.
 
 ### 3.2 Fluxo de inicialização (empacotado)
 
@@ -269,7 +270,7 @@ const path = require("node:path");
 const host = "127.0.0.1";
 const isDevelopment = process.argv.includes("--dev");
 const resourcesDir = standaloneDir({ app, isDevelopment, __dirname });
-const dataDir = app.getPath("userData"); // %APPDATA%\crmini
+const dataDir = app.getPath("userData"); // %APPDATA%\CRMini
 
 app.setAppUserModelId("br.com.crmini.app");
 
@@ -554,9 +555,9 @@ gravável. O mapeamento recomendado (convenções do Windows para app per-user):
 | Conteúdo                                                      | Diretório                                                       | Como é definido                       | Gravável?                                       |
 | ------------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------- | ----------------------------------------------- |
 | `CRMini.exe`, `resources/` (asar + standalone), desinstalador | `%LOCALAPPDATA%\Programs\CRMini`                                | NSIS `oneClick` + `perMachine: false` | Não (usuário pode escrever, mas o app não deve) |
-| Banco SQLite, backups `.bak-*`                                | `%APPDATA%\crmini`                                              | `app.getPath("userData")`             | Sim                                             |
-| `preferences.json` (caminho do banco)                         | `%APPDATA%\crmini`                                              | `app.getPath("userData")`             | Sim                                             |
-| Logos enviados                                                | `<pasta do banco>\assets` (`%APPDATA%\crmini\assets` no padrão) | `CRM_ASSETS_DIR`                      | Sim                                             |
+| Banco SQLite, backups `.bak-*`                                | `%APPDATA%\CRMini`                                              | `app.getPath("userData")`             | Sim                                             |
+| `preferences.json` (caminho do banco)                         | `%APPDATA%\CRMini`                                              | `app.getPath("userData")`             | Sim                                             |
+| Logos enviados                                                | `<pasta do banco>\assets` (`%APPDATA%\CRMini\assets` no padrão) | `CRM_ASSETS_DIR`                      | Sim                                             |
 | `database/init.sql`, `migrations/`                            | `resources\app\database`                                        | `CRM_RESOURCES_DIR`                   | Somente leitura                                 |
 
 Comportamento esperado do instalador:
@@ -568,11 +569,11 @@ Comportamento esperado do instalador:
 - **Apps e recursos**: desinstalador registrado em `HKCU\...\Uninstall` (aparece em
   "Aplicativos instalados"), com nome, versão (de `package.json`) e fabricante.
 - **Atualização/reinstalação**: instalar uma versão nova por cima substitui os binários e
-  **preserva** `%APPDATA%\crmini`; o banco e as preferências continuam válidos.
+  **preserva** `%APPDATA%\CRMini`; o banco e as preferências continuam válidos.
 - **Desinstalação**: remove binários/atalhos/registro e **não apaga** `userData`
   (`deleteAppDataOnUninstall: false`).
 - **Portable**: não instala nada; extrai o app para `%TEMP%` a cada execução e continua usando
-  `%APPDATA%\crmini` para dados. Não cria atalhos nem entrada de desinstalação.
+  `%APPDATA%\CRMini` para dados. Não cria atalhos nem entrada de desinstalação.
 - **Instância única**: o lock no `main.cjs` evita dois processos sobre o mesmo banco; o NSIS
   também encerra a instância em execução antes de atualizar.
 
@@ -713,7 +714,7 @@ jobs:
 
 1. **Instalar** o NSIS per-user (sem admin) e o portable; abrir ambos.
 2. **Primeira execução:** caixa de escolha de banco aparece; "Usar padrão" cria
-   `%APPDATA%\crmini\crm.sqlite`; migrations aplicadas (log visível).
+   `%APPDATA%\CRMini\crm.sqlite`; migrations aplicadas (log visível).
 3. **Criar cliente** e conferir persistência após fechar/reabrir.
 4. **Upload de logo** (PNG/JPG/WebP ≤ 2 MB): confirmar gravação em `assets/` junto do banco e
    exibição correta após reiniciar; mover a pasta do banco + `assets/` para outra máquina e

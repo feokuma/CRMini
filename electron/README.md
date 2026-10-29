@@ -34,7 +34,7 @@ O servidor Next resolve seus diretórios por variáveis de ambiente injetadas pe
 - `CRM_DATA_DIR`: raiz dos dados graváveis do usuário (`app.getPath('userData')`). Guarda `preferences.json`, `updater.json` e, como fallback de leitura, os logos legados em `<CRM_DATA_DIR>/tmp/assets`.
 - `CRM_ASSETS_DIR`: pasta dos logos, derivada do banco em uso (`<diretório do banco>/assets`) por `electron/assets-paths.cjs`. Na primeira abertura após a atualização, os logos de `<CRM_DATA_DIR>/tmp/assets` são movidos para lá uma única vez (marca `legacyAssetsMigratedAt` em `preferences.json`); o diretório legado continua como fallback de leitura.
 
-O `userData` vem de `app.getName()`, que usa o `name` do `package.json` (`crmini`) — e não o `build.productName` (`CRMini`, que nomeia exe, atalhos e instalador). Por isso a pasta de dados é `%APPDATA%\crmini` mesmo com o app chamado CRMini; mudar isso exigiria migrar os dados existentes.
+O `userData` vem de `app.getName()`. Com o `productName` na raiz do `package.json` e o `app.setName("CRMini")` no `main.cjs`, a pasta é `%APPDATA%\CRMini` (`~/.config/CRMini` no Linux). Instalações anteriores usavam `%APPDATA%\crmini`; `electron/user-data.cjs` migra a pasta na primeira abertura (`rename` e, se falhar, cópia mantendo a antiga). Em Windows/macOS as duas grafias já são a mesma pasta. Se a migração falhar, o app continua abrindo com a pasta antiga e tenta de novo no próximo início.
 
 Sem essas variáveis (ex.: `npm run dev`), o comportamento é o atual: `process.cwd()` como base e logos em `tmp/assets`.
 

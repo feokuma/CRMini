@@ -230,7 +230,7 @@ Commits sugeridos (Gitmoji): `✨ feat(electron): derivar pasta de logos do banc
 - `electron/README.md`: tabela de variáveis (`CRM_ASSETS_DIR`), regra de derivação e
   migração única do legado.
 - `docs/empacotamento-windows.md`: tabela de caminhos (§6.1), Fase 0 (§10) e item
-  "Local dos logos" (§11) — `%APPDATA%\crmini\assets` junto ao banco padrão.
+  "Local dos logos" (§11) — `%APPDATA%\CRMini\assets` junto ao banco padrão.
 - `.env.example`: comentário opcional sobre `CRM_ASSETS_DIR` para uso web.
 
 ## 11. Decisões aprovadas (2026-10-29)

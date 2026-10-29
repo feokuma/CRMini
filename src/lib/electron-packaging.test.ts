@@ -144,6 +144,17 @@ describe("electron-builder: appId", () => {
   });
 });
 
+describe("electron-builder: productName e userData", () => {
+  it("define productName na raiz, igual ao do build, para nomear o userData", () => {
+    // `app.getName()` (que define o `userData` como `%APPDATA%\CRMini`) lê o
+    // `productName` da raiz do package.json, não o `build.productName` (que só
+    // nomeia exe/atalhos/instalador). Sem a raiz, o pacote cairia no `name`
+    // ("crmini") e a pasta de dados viraria `crmini`.
+    expect(packageJson.productName).toBe("CRMini");
+    expect(packageJson.productName).toBe(build.productName);
+  });
+});
+
 describe("electron-builder: standalone empacotado", () => {
   it("copia .next/standalone para o diretório que o runtime lê em resources", () => {
     stubResourcesPath(path.join("/opt", "crmini", "resources"));
