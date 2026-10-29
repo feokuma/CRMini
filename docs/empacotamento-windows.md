@@ -5,6 +5,9 @@
 > a estratégia de build/CI, os riscos, a estratégia de testes e o faseamento.
 > Nada aqui altera o banco de dados nem instala dependências.
 
+> Nota: a atualização automática (`electron-updater` + `latest.yml`) foi implementada depois
+> deste plano e está documentada em [electron/README.md](../electron/README.md).
+
 ---
 
 ## 1. Objetivo e escopo

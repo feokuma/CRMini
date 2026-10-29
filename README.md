@@ -71,7 +71,9 @@ Cada execução disparada por tag anexa dois artefatos:
 
 O build precisa rodar no Windows: o `better-sqlite3` carrega um binário nativo por plataforma/arquitetura (`prebuilds/win32-x64.node`), então um pacote gerado em Linux não serve para Windows. Para gerar localmente em uma máquina Windows, use `npm run package:win` (instaladores em `dist/`) ou `npm run package:dir` (apenas o diretório `dist/win-unpacked`, útil para inspeção).
 
-Os binários **não são assinados**: o SmartScreen pode exibir o aviso "O Windows protegeu o seu PC" na primeira execução, e a liberação exige "Mais informações → Executar assim mesmo". Assinatura de código e atualização automática ainda não fazem parte do fluxo. O plano técnico completo está em [docs/empacotamento-windows.md](./docs/empacotamento-windows.md).
+A partir da 0.2.0 o app instalado se atualiza pelo próprio GitHub Releases: o `electron-updater` lê o feed gerado a partir de `build.publish`, então o repositório precisa ser **público** e cada release precisa publicar `latest.yml` e os `*.blockmap` (o workflow valida esses arquivos antes de publicar). A checagem roda em segundo plano e o download só começa quando o usuário aceita; o `portable.exe` e o `npm run dev` não se atualizam. Para desligar a checagem no app instalado, defina `CRM_DISABLE_UPDATES=1`. O comportamento completo está em [electron/README.md](./electron/README.md).
+
+Os binários **não são assinados**: o SmartScreen pode exibir o aviso "O Windows protegeu o seu PC" na primeira execução, e a liberação exige "Mais informações → Executar assim mesmo". A assinatura de código continua fora do fluxo; a atualização automática existe a partir da 0.2.0 e o aviso do SmartScreen também aparece nas atualizações. O plano técnico completo está em [docs/empacotamento-windows.md](./docs/empacotamento-windows.md).
 
 ## Banco de dados e migrations
 

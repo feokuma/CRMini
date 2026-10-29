@@ -64,8 +64,22 @@ O build precisa rodar no Windows porque o `better-sqlite3` é carregado de um pr
 
 A publicação é feita pelo workflow `.github/workflows/release.yml`, que ao enviar uma tag `v*` valida o conteúdo de `dist/win-unpacked` e anexa os `.exe` ao GitHub Releases. O mesmo workflow pode ser disparado manualmente (`workflow_dispatch`): ele executa build e empacotamento sem publicar release e deixa os `.exe` gerados no artefato `crmini-windows` da execução (retenção de 7 dias).
 
+## Atualização automática
+
+A partir da 0.2.0 o app instalado verifica novas versões no GitHub Releases. A dependência de produção é `electron-updater`. O feed vem do campo `build.publish` do `package.json` (`provider: github`, `owner: feokuma`, `repo: crminho`, `releaseType: release`): o electron-builder gera `resources/app-update.yml` a partir dele e o código não chama `setFeedURL`. Por isso o repositório precisa ser **público** e cada release precisa publicar `latest.yml` e os `*.blockmap` — o workflow valida `latest.yml`, `app-update.yml` e os blockmaps antes de publicar.
+
+A primeira checagem acontece cerca de 10 s após abrir o app e depois a cada 4 h (`electron/updater.cjs`). Checagens automáticas respeitam um intervalo mínimo de 30 min, persistido em `userData/updater.json`, e recebem jitter de ±10%; falhas entram em backoff de 15 min → 30 min → 1 h → 6 h. Como o intervalo mínimo de 30 min prevalece sobre o primeiro degrau do backoff, a primeira nova tentativa após uma falha ocorre em 30 min, e não em 15 min. Falha de checagem é silenciosa para o usuário (só log no processo principal); falha de download ou de instalação aparece no chip.
+
+O chip fica fixo no canto superior direito (`src/components/update-chip.tsx`, renderizado no `RootLayout`) e é visível em todas as telas. Seus estados são “Atualizar para {versão}”, “Baixando atualização… {N}%” com barra de progresso (sem cancelar), “Reiniciar para atualizar”, “Reiniciando para atualizar…” e “Não foi possível atualizar.” com “Tentar novamente”. Sem `window.crmDesktop.updates` (navegador ou `npm run dev`), com `enabled: false`, nos estados `idle`/`checking` e no erro de checagem, o chip não renderiza nada.
+
+O download só começa no clique e a instalação só ocorre em “Reiniciar para atualizar”: `autoDownload`, `autoInstallOnAppQuit`, `allowDowngrade` e `allowPrerelease` ficam desligados. Ao instalar, o servidor Next é encerrado antes de `quitAndInstall(true, true)`.
+
+A atualização existe apenas no app instalado (`app.isPackaged`). O `portable.exe` nunca se atualiza (`PORTABLE_EXECUTABLE_DIR`/`PORTABLE_EXECUTABLE_FILE`), `CRM_DISABLE_UPDATES=1` (aceita `1`, `true` ou `yes`) desliga a checagem e `npm run dev` não tem feed.
+
+Quem está na 0.1.0 não tem updater e precisa instalar a 0.2.0 manualmente uma única vez.
+
 ## Limitações / próximos passos
 
 - O empacotamento Windows está configurado para NSIS + portable (x64). macOS e Linux empacotados continuam fora do escopo.
-- Os binários não são assinados: o SmartScreen exibe aviso na primeira execução (ver [docs/empacotamento-windows.md](../docs/empacotamento-windows.md)).
-- Não há atualização automática (`electron-updater`) nem verificação de nova versão dentro do app.
+- Os binários não são assinados: o SmartScreen exibe aviso na primeira execução e também nas atualizações (ver [docs/empacotamento-windows.md](../docs/empacotamento-windows.md)).
+- Não há canal de pré-release nem rollback automático: a atualização oferece apenas as versões estáveis publicadas no GitHub Releases.
