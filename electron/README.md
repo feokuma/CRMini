@@ -31,9 +31,10 @@ O servidor fica limitado a `127.0.0.1` em uma porta livre. Esta aplicação inic
 O servidor Next resolve seus diretórios por variáveis de ambiente injetadas pelo Electron:
 
 - `CRM_RESOURCES_DIR`: raiz dos recursos somente leitura. `src/lib/db.ts` lê `init.sql` e `migrations/` em `<CRM_RESOURCES_DIR>/database`. No pacote, aponta para `resources/app`; em produção local, para `.next/standalone`; em dev, cai em `process.cwd()`.
-- `CRM_DATA_DIR`: raiz dos dados graváveis do usuário (`app.getPath('userData')`). Os logos enviados são gravados e lidos em `<CRM_DATA_DIR>/tmp/assets`.
+- `CRM_DATA_DIR`: raiz dos dados graváveis do usuário (`app.getPath('userData')`). Guarda `preferences.json`, `updater.json` e, como fallback de leitura, os logos legados em `<CRM_DATA_DIR>/tmp/assets`.
+- `CRM_ASSETS_DIR`: pasta dos logos, derivada do banco em uso (`<diretório do banco>/assets`) por `electron/assets-paths.cjs`. Na primeira abertura após a atualização, os logos de `<CRM_DATA_DIR>/tmp/assets` são movidos para lá uma única vez (marca `legacyAssetsMigratedAt` em `preferences.json`); o diretório legado continua como fallback de leitura.
 
-Sem essas variáveis (ex.: `npm run dev`), o comportamento é o atual: `process.cwd()` como base.
+Sem essas variáveis (ex.: `npm run dev`), o comportamento é o atual: `process.cwd()` como base e logos em `tmp/assets`.
 
 ## Layout do standalone
 

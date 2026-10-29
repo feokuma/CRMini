@@ -79,6 +79,8 @@ Os binários **não são assinados**: o SmartScreen pode exibir o aviso "O Windo
 
 O banco é um arquivo SQLite local no diretório de dados do usuário (configurável por `SQLITE_PATH`). Na abertura, as migrations pendentes de `database/migrations` são executadas automaticamente em ordem e, em seguida, o schema de `database/init.sql` é reaplicado de forma idempotente (em banco novo, o `init.sql` cria tudo e as migrations históricas entram apenas no registro). No Electron, a escolha do banco ocorre apenas na primeira inicialização e fica salva nas preferências do usuário; as migrations rodam antes de iniciar o Next.js, e uma falha impede a abertura da janela. Use Configurações para escolher outro banco; o app reinicia para abrir o novo caminho, sem mover ou apagar o anterior. Se o caminho salvo não estiver disponível ou for inválido, o app informa o problema e oferece seletor explícito de recuperação; cancelar encerra o app preservando a preferência e sem criar banco vazio.
 
+Os logos enviados ficam em `assets/` na mesma pasta do banco em uso (Configurações exibe o caminho). Para backup ou para levar o CRM a outro computador, copie o arquivo `<pasta>/crm.sqlite` (encerre o app antes) junto da pasta `<pasta>/assets/`; copiar só o banco deixa as imagens para trás.
+
 Para inserir os dados de demonstração (três empresas, seus contatos e oportunidades de exemplo), execute:
 
 ```bash
@@ -153,9 +155,9 @@ O comando imprime uma linha por problema com rota, largura e medida, termina com
 - `database/migrate.cjs`: runner que aplica o schema, registra/aplica migrations e gera backup antes de alterar bancos existentes.
 - `database/migrations`: migrations SQL append-only para bancos existentes.
 - `database/seed.sql` e `database/seed.mjs`: clientes, contatos e oportunidades de demonstração.
-- `tmp/assets`: armazenamento provisório dos logos enviados (não versionado).
+- `tmp/assets`: logos enviados no modo web (`npm run dev`); no desktop, ficam em `assets/` ao lado do banco. Não versionado.
 - `src/app/globals.css`: estilos responsivos da aplicação.
 - `docs/padrao-visual.md`: padrão visual obrigatório para criação e ajuste de telas.
 - `src/app/layout.tsx`: layout raiz e metadados.
 
-Clientes não são excluídos pela aplicação: a ação disponível os desativa e preserva o histórico. A duração de projeto é persistida em horas (8 por dia, 40 por semana e 160 por mês). Datas e horários seguem o padrão brasileiro na interface e o fuso `America/Sao_Paulo`; instantes são armazenados em UTC, enquanto campos de data civil permanecem sem conversão de fuso. Logos aceitam PNG, JPG ou WebP até 2 MB. `tmp/assets` é um armazenamento provisório, não adequado para implantação efêmera ou produção.
+Clientes não são excluídos pela aplicação: a ação disponível os desativa e preserva o histórico. A duração de projeto é persistida em horas (8 por dia, 40 por semana e 160 por mês). Datas e horários seguem o padrão brasileiro na interface e o fuso `America/Sao_Paulo`; instantes são armazenados em UTC, enquanto campos de data civil permanecem sem conversão de fuso. Logos aceitam PNG, JPG ou WebP até 2 MB; no desktop eles são gravados em `assets/` junto do banco escolhido e, sem o app desktop, em `tmp/assets`, um armazenamento provisório não versionado.

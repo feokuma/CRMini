@@ -141,7 +141,7 @@ Dados do usuário (graváveis, sobrevivem a reinstalação):
 ├── preferences.json            # databasePath escolhido (já existe hoje)
 ├── crm.sqlite (default)        # banco padrão, ou caminho escolhido pelo usuário
 ├── crm.sqlite.bak-*            # backups de migration
-└── tmp\assets\                 # logos enviados (ou assets\, ver decisão em aberto)
+└── assets\                     # logos enviados, ao lado do banco em uso
 ```
 
 ### 3.2 Fluxo de inicialização (empacotado)
@@ -156,9 +156,11 @@ Dados do usuário (graváveis, sobrevivem a reinstalação):
 4. `server.start(databasePath)` → reserva porta livre, spawna `process.execPath`
    (ELECTRON_RUN_AS_NODE) executando **`resources/app/server.js`** com env
    `HOSTNAME=127.0.0.1`, `PORT=<livre>`, `SQLITE_PATH=<db>`,
-   `CRM_RESOURCES_DIR=resources/app`, `CRM_DATA_DIR=userData`.
+   `CRM_RESOURCES_DIR=resources/app`, `CRM_DATA_DIR=userData`,
+   `CRM_ASSETS_DIR=<pasta do banco>/assets`.
 5. O `server.js` (standalone) serve o Next; `db.ts` e as rotas de logo resolvem seus
-   diretórios via `CRM_RESOURCES_DIR`/`CRM_DATA_DIR`.
+   diretórios via `CRM_RESOURCES_DIR`/`CRM_ASSETS_DIR` (com `CRM_DATA_DIR` apenas como
+   fallback de leitura dos logos legados).
 6. `BrowserWindow` carrega `http://127.0.0.1:<porta>` com navegação externa restrita.
 
 ---
@@ -413,6 +415,11 @@ const migrationsDir = path.join(databaseDir, "migrations");
 
 ### 5.7 `src/app/api/logo/route.ts` e `src/app/api/logo/[name]/route.ts`
 
+**Atualização (implementado):** a resolução saiu das rotas para `src/lib/logo-assets.ts` e o
+diretório principal passou a ser `CRM_ASSETS_DIR` (derivado do diretório do banco em
+`electron/assets-paths.cjs`), com `CRM_DATA_DIR/tmp/assets` e `process.cwd()/tmp/assets`
+apenas como fallback de leitura. O restante desta seção fica como registro histórico.
+
 Substituir `process.cwd()` por `CRM_DATA_DIR` com fallback (mantém `npm run dev` idêntico):
 
 ```ts
@@ -428,7 +435,8 @@ const image = await readFile(path.join(dataDir, "tmp", "assets", name));
 ```
 
 - No dev, continua em `repo/tmp/assets` (já no `.gitignore`). No empacotado, em
-  `userData/tmp/assets`. Ver §11 sobre a localização ideal dos logos.
+  `userData/tmp/assets`. Com a atualização acima, os logos ficam em `assets/` junto do banco
+  escolhido, o que torna banco e imagens transportáveis na mesma cópia.
 
 ### 5.8 `package.json` — scripts
 
@@ -538,13 +546,13 @@ Pontos importantes:
 Sim: o instalador NSIS cuida dos diretórios e atalhos, e o aplicativo só grava dados em pasta
 gravável. O mapeamento recomendado (convenções do Windows para app per-user):
 
-| Conteúdo                                                      | Diretório                                            | Como é definido                       | Gravável?                                       |
-| ------------------------------------------------------------- | ---------------------------------------------------- | ------------------------------------- | ----------------------------------------------- |
-| `CRMini.exe`, `resources/` (asar + standalone), desinstalador | `%LOCALAPPDATA%\Programs\CRMini`                     | NSIS `oneClick` + `perMachine: false` | Não (usuário pode escrever, mas o app não deve) |
-| Banco SQLite, backups `.bak-*`                                | `%APPDATA%\CRMini`                                   | `app.getPath("userData")`             | Sim                                             |
-| `preferences.json` (caminho do banco)                         | `%APPDATA%\CRMini`                                   | `app.getPath("userData")`             | Sim                                             |
-| Logos enviados                                                | `%APPDATA%\CRMini\assets` (ou `tmp\assets`, ver §11) | `CRM_DATA_DIR`                        | Sim                                             |
-| `database/init.sql`, `migrations/`                            | `resources\app\database`                             | `CRM_RESOURCES_DIR`                   | Somente leitura                                 |
+| Conteúdo                                                      | Diretório                                                       | Como é definido                       | Gravável?                                       |
+| ------------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------- | ----------------------------------------------- |
+| `CRMini.exe`, `resources/` (asar + standalone), desinstalador | `%LOCALAPPDATA%\Programs\CRMini`                                | NSIS `oneClick` + `perMachine: false` | Não (usuário pode escrever, mas o app não deve) |
+| Banco SQLite, backups `.bak-*`                                | `%APPDATA%\CRMini`                                              | `app.getPath("userData")`             | Sim                                             |
+| `preferences.json` (caminho do banco)                         | `%APPDATA%\CRMini`                                              | `app.getPath("userData")`             | Sim                                             |
+| Logos enviados                                                | `<pasta do banco>\assets` (`%APPDATA%\CRMini\assets` no padrão) | `CRM_ASSETS_DIR`                      | Sim                                             |
+| `database/init.sql`, `migrations/`                            | `resources\app\database`                                        | `CRM_RESOURCES_DIR`                   | Somente leitura                                 |
 
 Comportamento esperado do instalador:
 
@@ -686,10 +694,10 @@ jobs:
 
 1. **`server-lifecycle` empacotado:** spawn de `process.execPath` com `[resourcesDir/server.js]`,
    `cwd = resourcesDir`, e env com `ELECTRON_RUN_AS_NODE`, `HOSTNAME`, `PORT`, `SQLITE_PATH`,
-   `CRM_RESOURCES_DIR`, `CRM_DATA_DIR`.
-2. **Resolução de dados** (`db.ts` e rotas de logo): com `CRM_DATA_DIR`/`CRM_RESOURCES_DIR`
-   definidos, escrever/ler em diretório temporário; sem eles, cair no `process.cwd()` (não
-   regredir `npm run dev`).
+   `CRM_RESOURCES_DIR`, `CRM_DATA_DIR`, `CRM_ASSETS_DIR`.
+2. **Resolução de dados** (`db.ts` e rotas de logo): com `CRM_ASSETS_DIR` apontando p/ diretório
+   temporário, escrever/ler lá; com só `CRM_DATA_DIR`, ler o legado; sem nenhum dos dois, cair
+   no `process.cwd()` (não regredir `npm run dev`).
 3. **Migrations em resources:** `applyMigrations` com `resourcesDir` temporário apontando p/
    `migrate.cjs` e validando que o script e o `cwd` corretos são passados.
 4. **`prepare-standalone.cjs`:** idempotência (rodar duas vezes) e presença de
@@ -702,8 +710,9 @@ jobs:
 2. **Primeira execução:** caixa de escolha de banco aparece; "Usar padrão" cria
    `%APPDATA%\crmini\crm.sqlite`; migrations aplicadas (log visível).
 3. **Criar cliente** e conferir persistência após fechar/reabrir.
-4. **Upload de logo** (PNG/JPG/WebP ≤ 2 MB): confirmar gravação em `userData/tmp/assets` e
-   exibição correta após reiniciar.
+4. **Upload de logo** (PNG/JPG/WebP ≤ 2 MB): confirmar gravação em `assets/` junto do banco e
+   exibição correta após reiniciar; mover a pasta do banco + `assets/` para outra máquina e
+   confirmar que os logos continuam aparecendo.
 5. **Reinstalar** (desinstalar e reinstalar) **sem perder dados**: banco, logos e
    `preferences.json` preservados (`deleteAppDataOnUninstall: false`).
 6. **Dashboard dinâmico:** criar um cliente/oportunidade, voltar ao `/` e confirmar que os
@@ -719,10 +728,12 @@ jobs:
 
 ## 10. Faseamento
 
-### Fase 0 — Caminhos e ambiente (`CRM_RESOURCES_DIR` / `CRM_DATA_DIR`)
+### Fase 0 — Caminhos e ambiente (`CRM_RESOURCES_DIR` / `CRM_DATA_DIR` / `CRM_ASSETS_DIR`)
 
 Mudar `src/lib/db.ts`, as duas rotas de logo e criar `electron/resource-paths.cjs`; passar
-`resourcesDir`/`dataDir` pelo `server-lifecycle` para o env. Manter dev/repo inalterado.
+`resourcesDir`/`dataDir` pelo `server-lifecycle` para o env. Manter dev/repo inalterado. Os
+logos foram além dessa fase: `electron/assets-paths.cjs` deriva `CRM_ASSETS_DIR` do diretório
+do banco e move uma única vez os logos legados de `<userData>/tmp/assets`.
 
 **Critérios de aceite:** `npm run dev`, `desktop:dev` e `desktop` funcionam como hoje; testes
 existentes verdes + novos testes de resolução de caminhos.
@@ -773,8 +784,9 @@ funcional com rollback seguro.
 3. **`desktop`/`desktop:dev`:** manter `desktop` como `next start` ou unificá-lo para rodar o
    standalone (mesma rota do pacote)? Recomendado unificar para exercitar o caminho de produção
    localmente.
-4. **Local dos logos:** `userData/tmp/assets` (menor mudança) vs. `userData/assets` vs.
-   subpasta junto ao banco. Afeta migração de logos existentes.
+4. **Local dos logos (decidido):** `assets/` na pasta do banco em uso, propagado como
+   `CRM_ASSETS_DIR`; os logos legados de `userData/tmp/assets` são movidos uma única vez e o
+   diretório legado permanece como fallback de leitura.
 5. **Identidade do app:** `appId`, `productName` e arte final do ícone (`.ico` a partir de
    `public/brand/crmini-symbol.svg`).
 6. **Targets:** apenas `nsis` + `portable`, ou incluir `msi`? Arquitetura `x64` apenas?
