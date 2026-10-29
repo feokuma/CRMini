@@ -51,6 +51,7 @@ it("segue o esqueleto de página e o card de formulário do padrão visual", () 
 it("mostra o caminho em campo somente leitura com ação primária", async () => {
   window.crmDesktop = {
     getDatabasePath: vi.fn().mockResolvedValue("/user/crm.sqlite"),
+    getAssetsPath: vi.fn().mockResolvedValue("/user/assets"),
     chooseDatabase: vi.fn(),
   };
 
@@ -66,6 +67,7 @@ it("mostra o caminho em campo somente leitura com ação primária", async () =>
 it("mostra caminho desktop e informa falha no seletor", async () => {
   window.crmDesktop = {
     getDatabasePath: vi.fn().mockResolvedValue("/user/crm.sqlite"),
+    getAssetsPath: vi.fn().mockResolvedValue("/user/assets"),
     chooseDatabase: vi
       .fn()
       .mockResolvedValue({ ok: false, error: "Banco inválido" }),
@@ -84,6 +86,7 @@ it("exibe o caminho somente depois que a ponte responde", async () => {
   const pathResponse = deferred<string | null>();
   window.crmDesktop = {
     getDatabasePath: vi.fn(() => pathResponse.promise),
+    getAssetsPath: vi.fn().mockResolvedValue("/user/assets"),
     chooseDatabase: vi.fn(),
   };
 
@@ -107,6 +110,7 @@ it("exibe o caminho somente depois que a ponte responde", async () => {
 it("para o carregamento e bloqueia troca quando falha consulta do caminho", async () => {
   window.crmDesktop = {
     getDatabasePath: vi.fn().mockRejectedValue(new Error("IPC indisponível")),
+    getAssetsPath: vi.fn().mockResolvedValue("/user/assets"),
     chooseDatabase: vi.fn(),
   };
 
@@ -127,6 +131,7 @@ it("para o carregamento e bloqueia troca quando falha consulta do caminho", asyn
 it("mostra erro se a promessa do seletor rejeitar", async () => {
   window.crmDesktop = {
     getDatabasePath: vi.fn().mockResolvedValue("/user/crm.sqlite"),
+    getAssetsPath: vi.fn().mockResolvedValue("/user/assets"),
     chooseDatabase: vi.fn().mockRejectedValue(new Error("IPC indisponível")),
   };
   render(<SettingsPage />);
@@ -147,6 +152,7 @@ it("não mostra erro quando o usuário cancela o seletor", async () => {
     .mockResolvedValue({ ok: false, canceled: true });
   window.crmDesktop = {
     getDatabasePath: vi.fn().mockResolvedValue("/user/crm.sqlite"),
+    getAssetsPath: vi.fn().mockResolvedValue("/user/assets"),
     chooseDatabase,
   };
 
@@ -166,6 +172,7 @@ it("não mostra erro quando a troca é aceita e o aplicativo vai reiniciar", asy
     .mockResolvedValue({ ok: true, restarting: true });
   window.crmDesktop = {
     getDatabasePath: vi.fn().mockResolvedValue("/user/crm.sqlite"),
+    getAssetsPath: vi.fn().mockResolvedValue("/user/assets"),
     chooseDatabase,
   };
 
@@ -186,6 +193,7 @@ it("limpa o erro anterior ao tentar trocar novamente", async () => {
     .mockResolvedValueOnce({ ok: false, canceled: true });
   window.crmDesktop = {
     getDatabasePath: vi.fn().mockResolvedValue("/user/crm.sqlite"),
+    getAssetsPath: vi.fn().mockResolvedValue("/user/assets"),
     chooseDatabase,
   };
 
@@ -202,4 +210,74 @@ it("limpa o erro anterior ao tentar trocar novamente", async () => {
   screen.getByRole("button", { name: /trocar banco/i }).click();
   await waitFor(() => expect(chooseDatabase).toHaveBeenCalledTimes(2));
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+});
+
+it("exibe a pasta de imagens em campo somente leitura", async () => {
+  window.crmDesktop = {
+    getDatabasePath: vi.fn().mockResolvedValue("/user/crm.sqlite"),
+    getAssetsPath: vi.fn().mockResolvedValue("/user/assets"),
+    chooseDatabase: vi.fn(),
+  };
+
+  render(<SettingsPage />);
+
+  const assetsField = await screen.findByDisplayValue("/user/assets");
+  expect(assetsField).toHaveAttribute("readonly");
+  expect(screen.getByLabelText("Pasta de imagens")).toBe(assetsField);
+
+  const section = screen
+    .getByRole("heading", { level: 2, name: "Imagens" })
+    .closest("section");
+  expect(section).toHaveClass("form-section");
+  expect(section).toHaveAttribute("aria-labelledby", "assets-setting");
+  expect(section?.querySelector("button")).toBeNull();
+});
+
+it("mostra caminho indisponível quando a pasta de imagens é nula", async () => {
+  window.crmDesktop = {
+    getDatabasePath: vi.fn().mockResolvedValue("/user/crm.sqlite"),
+    getAssetsPath: vi.fn().mockResolvedValue(null),
+    chooseDatabase: vi.fn(),
+  };
+
+  render(<SettingsPage />);
+
+  const assetsField = screen.getByLabelText("Pasta de imagens");
+  await waitFor(() =>
+    expect(assetsField).toHaveAttribute("placeholder", "Caminho indisponível"),
+  );
+  expect(assetsField).toHaveValue("");
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+});
+
+it("mostra erro acessível quando a consulta da pasta de imagens falha", async () => {
+  window.crmDesktop = {
+    getDatabasePath: vi.fn().mockResolvedValue("/user/crm.sqlite"),
+    getAssetsPath: vi.fn().mockRejectedValue(new Error("IPC indisponível")),
+    chooseDatabase: vi.fn(),
+  };
+
+  render(<SettingsPage />);
+
+  await waitFor(() =>
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Não foi possível consultar a pasta de imagens.",
+    ),
+  );
+
+  const assetsField = screen.getByLabelText("Pasta de imagens");
+  expect(assetsField).toHaveAttribute("aria-invalid", "true");
+  expect(assetsField).toHaveAttribute("aria-describedby", "assets-path-error");
+  expect(
+    screen.queryByText("Carregando pasta de imagens…"),
+  ).not.toBeInTheDocument();
+});
+
+it("não mostra a seção de imagens no navegador", () => {
+  render(<SettingsPage />);
+
+  expect(
+    screen.queryByRole("heading", { level: 2, name: "Imagens" }),
+  ).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("Pasta de imagens")).not.toBeInTheDocument();
 });

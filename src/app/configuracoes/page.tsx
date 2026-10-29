@@ -6,8 +6,11 @@ import { useEffect, useState } from "react";
 export default function SettingsPage() {
   const [path, setPath] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [assetsPath, setAssetsPath] = useState<string | null>(null);
+  const [assetsError, setAssetsError] = useState("");
   const [available, setAvailable] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [assetsLoading, setAssetsLoading] = useState(false);
 
   useEffect(() => {
     const bridge = window.crmDesktop;
@@ -16,6 +19,7 @@ export default function SettingsPage() {
     let active = true;
     setAvailable(true);
     setLoading(true);
+    setAssetsLoading(true);
     bridge
       .getDatabasePath()
       .then((databasePath) => {
@@ -31,6 +35,21 @@ export default function SettingsPage() {
       })
       .finally(() => {
         if (active) setLoading(false);
+      });
+
+    bridge
+      .getAssetsPath()
+      .then((assetsDir) => {
+        if (active) setAssetsPath(assetsDir);
+      })
+      .catch(() => {
+        if (active)
+          setAssetsError(
+            "Não foi possível consultar a pasta de imagens. Tente novamente ou reinicie o aplicativo.",
+          );
+      })
+      .finally(() => {
+        if (active) setAssetsLoading(false);
       });
 
     return () => {
@@ -54,6 +73,14 @@ export default function SettingsPage() {
     [
       loading ? "database-path-status" : null,
       error ? "database-path-error" : null,
+    ]
+      .filter(Boolean)
+      .join(" ") || undefined;
+
+  const assetsPathDescription =
+    [
+      assetsLoading ? "assets-path-status" : null,
+      assetsError ? "assets-path-error" : null,
     ]
       .filter(Boolean)
       .join(" ") || undefined;
@@ -136,6 +163,44 @@ export default function SettingsPage() {
             )}
           </div>
         </section>
+        {available && (
+          <section className="form-section" aria-labelledby="assets-setting">
+            <div className="form-section-heading">
+              <div>
+                <h2 id="assets-setting">Imagens</h2>
+                <p>Pasta onde os logos dos clientes são armazenados.</p>
+              </div>
+            </div>
+            <div className="settings-body">
+              <label className="form-field">
+                <span>Pasta de imagens</span>
+                <input
+                  type="text"
+                  readOnly
+                  value={assetsPath ?? ""}
+                  placeholder={assetsLoading ? "" : "Caminho indisponível"}
+                  title={assetsPath ?? undefined}
+                  aria-describedby={assetsPathDescription}
+                  aria-invalid={assetsError ? true : undefined}
+                />
+              </label>
+              {assetsLoading && (
+                <p className="subheading" id="assets-path-status" role="status">
+                  Carregando pasta de imagens…
+                </p>
+              )}
+              {assetsError && (
+                <p className="form-error" id="assets-path-error" role="alert">
+                  {assetsError}
+                </p>
+              )}
+              <p className="subheading">
+                A pasta de imagens acompanha a pasta do banco de dados: ao mover
+                o banco, os logos vão junto.
+              </p>
+            </div>
+          </section>
+        )}
       </div>
     </main>
   );

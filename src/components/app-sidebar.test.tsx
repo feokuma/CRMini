@@ -122,6 +122,7 @@ describe("Menu lateral", () => {
     pathname.current = "/configuracoes";
     window.crmDesktop = {
       getDatabasePath: vi.fn(),
+      getAssetsPath: vi.fn(),
       chooseDatabase: vi.fn(),
     };
 

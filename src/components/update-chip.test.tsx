@@ -72,6 +72,7 @@ function mountBridge(initial: UpdateSnapshot) {
 
   window.crmDesktop = {
     getDatabasePath: vi.fn(),
+    getAssetsPath: vi.fn(),
     chooseDatabase: vi.fn(),
     updates,
   };
@@ -110,6 +111,7 @@ describe("Chip de atualização", () => {
   it("não renderiza nada quando a ponte existe mas sem `updates`", async () => {
     window.crmDesktop = {
       getDatabasePath: vi.fn(),
+      getAssetsPath: vi.fn(),
       chooseDatabase: vi.fn(),
     };
 
