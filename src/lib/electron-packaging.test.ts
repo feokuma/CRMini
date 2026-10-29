@@ -324,3 +324,80 @@ describe("scripts de empacotamento", () => {
     );
   });
 });
+
+describe("electron-builder: canal de atualização", () => {
+  const publish = build.publish as {
+    provider: string;
+    owner: string;
+    repo: string;
+    releaseType: string;
+  };
+
+  it("publica o feed de atualização no repositório configurado", () => {
+    // O `app-update.yml` gerado no pacote aponta para este repositório; ele
+    // precisa ser público para o cliente ler `latest.yml` sem token.
+    expect(publish).toEqual({
+      provider: "github",
+      owner: "feokuma",
+      repo: "crminho",
+      releaseType: "release",
+    });
+  });
+
+  it("leva o electron-updater para o pacote como dependência de produção", () => {
+    const dependencies = packageJson.dependencies as Record<string, string>;
+    const devDependencies = packageJson.devDependencies as Record<
+      string,
+      string
+    >;
+
+    expect(dependencies["electron-updater"]).toMatch(/^\^?6\./);
+    expect(devDependencies["electron-updater"]).toBeUndefined();
+  });
+
+  describe("workflow de release", () => {
+    const workflow = fs.readFileSync(
+      fromRoot(".github/workflows/release.yml"),
+      "utf8",
+    );
+    const publishIndex = workflow.indexOf("name: Publicar release");
+    const validationIndex = workflow.indexOf(
+      "name: Validar metadados de atualização",
+    );
+
+    it("valida o metadata de atualização antes de publicar", () => {
+      // Publicar um `.exe` sem `latest.yml` deixaria todos os clientes sem
+      // atualização, sem erro visível.
+      expect(validationIndex).toBeGreaterThan(-1);
+      expect(publishIndex).toBeGreaterThan(validationIndex);
+    });
+
+    it("gera o pacote sem publicar pelo electron-builder", () => {
+      expect(workflow).toContain("--publish never");
+    });
+
+    it("anexa os instaladores e o metadata à release", () => {
+      const publication = workflow.slice(publishIndex);
+
+      for (const asset of [
+        "dist/*.exe",
+        "dist/latest.yml",
+        "dist/*.blockmap",
+      ]) {
+        expect(publication).toContain(asset);
+      }
+      expect(publication).toContain("fail_on_unmatched_files: true");
+      expect(publication).toContain("draft: false");
+      expect(publication).toContain("prerelease: false");
+    });
+
+    it("mantém o metadata também no artefato do workflow_dispatch", () => {
+      const artifactIndex = workflow.indexOf("name: crmini-windows");
+      const artifact = workflow.slice(artifactIndex, publishIndex);
+
+      for (const asset of ["dist/latest.yml", "dist/*.blockmap"]) {
+        expect(artifact).toContain(asset);
+      }
+    });
+  });
+});
