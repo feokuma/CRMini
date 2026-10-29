@@ -52,6 +52,27 @@ O comando `npm run desktop` executa `desktop:build` (equivalente a `npm run buil
 
 O servidor standalone roda sob `ELECTRON_RUN_AS_NODE`. O `better-sqlite3` 13 usa prebuilds N-API (`prebuilds/<plataforma>-<arch>.node`), compatíveis com Node e Electron, então não é preciso reconstruir o módulo para cada runtime. O comando `npm run desktop` executa `npm run check:electron-abi` antes de abrir a janela e falha com uma mensagem explícita se o prebuild da plataforma não carregar.
 
+## Distribuição (GitHub Releases)
+
+O aplicativo desktop é distribuído pelo GitHub Releases: enviar uma tag `vX.Y.Z` dispara o workflow `.github/workflows/release.yml`, que gera os instaladores em um runner `windows-latest` e os anexa à release da tag.
+
+Para publicar uma versão:
+
+1. Atualize `version` no `package.json` (ex.: `0.2.0`) e faça commit.
+2. Crie a tag no mesmo valor, com o prefixo `v`: `git tag v0.2.0`.
+3. Envie a tag: `git push origin v0.2.0`.
+
+O workflow falha se a versão da tag (sem o `v`) não for idêntica à `version` do `package.json`. Ele também pode ser executado manualmente (`workflow_dispatch`): nesse caso o build e o empacotamento rodam, mas nenhuma release é publicada; os `.exe` gerados ficam disponíveis no artefato `crmini-windows` da execução (retenção de 7 dias).
+
+Cada execução disparada por tag anexa dois artefatos:
+
+- `CRMini-<versão>-setup.exe`: instalador NSIS por usuário, sem exigir administrador, com atalhos no menu Iniciar e na área de trabalho e desinstalador registrado. Desinstalar não apaga o banco, as preferências nem os logos do usuário.
+- `CRMini-<versão>-portable.exe`: executa sem instalar, mas continua gravando os dados no diretório do usuário.
+
+O build precisa rodar no Windows: o `better-sqlite3` carrega um binário nativo por plataforma/arquitetura (`prebuilds/win32-x64.node`), então um pacote gerado em Linux não serve para Windows. Para gerar localmente em uma máquina Windows, use `npm run package:win` (instaladores em `dist/`) ou `npm run package:dir` (apenas o diretório `dist/win-unpacked`, útil para inspeção).
+
+Os binários **não são assinados**: o SmartScreen pode exibir o aviso "O Windows protegeu o seu PC" na primeira execução, e a liberação exige "Mais informações → Executar assim mesmo". Assinatura de código e atualização automática ainda não fazem parte do fluxo. O plano técnico completo está em [docs/empacotamento-windows.md](./docs/empacotamento-windows.md).
+
 ## Banco de dados e migrations
 
 O banco é um arquivo SQLite local no diretório de dados do usuário (configurável por `SQLITE_PATH`). Na abertura, as migrations pendentes de `database/migrations` são executadas automaticamente em ordem e, em seguida, o schema de `database/init.sql` é reaplicado de forma idempotente (em banco novo, o `init.sql` cria tudo e as migrations históricas entram apenas no registro). No Electron, a escolha do banco ocorre apenas na primeira inicialização e fica salva nas preferências do usuário; as migrations rodam antes de iniciar o Next.js, e uma falha impede a abertura da janela. Use Configurações para escolher outro banco; o app reinicia para abrir o novo caminho, sem mover ou apagar o anterior. Se o caminho salvo não estiver disponível ou for inválido, o app informa o problema e oferece seletor explícito de recuperação; cancelar encerra o app preservando a preferência e sem criar banco vazio.

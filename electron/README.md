@@ -44,6 +44,28 @@ Após `npm run prepare:standalone`, `.next/standalone` contém:
 - `database/` — `init.sql`, `migrations/` e os `.cjs` usados pelo processo de migrations.
 - `node_modules/better-sqlite3` — copiado pelo script para garantir o prebuild N-API da plataforma (o tracing do Next pode omiti-lo).
 
+## Empacotamento (Windows)
+
+O empacotamento usa `electron-builder`, configurado no campo `build` do `package.json` (não há `electron-builder.yml`). Em uma máquina Windows:
+
+```bash
+npm run package:win
+```
+
+O comando executa `desktop:build` (build + standalone) e gera em `dist/` o instalador NSIS (`CRMini-<versão>-setup.exe`, per-user, sem admin) e o `CRMini-<versão>-portable.exe`. `npm run package:dir` gera apenas `dist/win-unpacked`, sem instaladores.
+
+O pacote contém:
+
+- `resources/app.asar` — `electron/**/*`, `database/sqlite-paths.cjs` e as dependências de produção (o `better-sqlite3` usado pelo processo principal fica fora do asar via `asarUnpack: **/*.node`).
+- `resources/app/` — o standalone do Next (`extraResources` de `.next/standalone`), consumido por `standaloneDir()` como `process.resourcesPath/app`.
+- `resources/icon.ico` — cópia de `public/brand/crmini-favicon.ico` (em desenvolvimento, o ícone opcional vem de `build/icon.ico`).
+
+O build precisa rodar no Windows porque o `better-sqlite3` é carregado de um prebuild por plataforma/arquitetura; não há cross-build a partir de Linux. O `npmRebuild` fica desligado (`build.npmRebuild: false`) porque o `better-sqlite3` 13 traz prebuilds N-API compatíveis com Node e Electron (ver `scripts/check-electron-abi.cjs`), então `@electron/rebuild` não é necessário e só acrescentaria tempo e risco de compilar do fonte no runner.
+
+A publicação é feita pelo workflow `.github/workflows/release.yml`, que ao enviar uma tag `v*` valida o conteúdo de `dist/win-unpacked` e anexa os `.exe` ao GitHub Releases. O mesmo workflow pode ser disparado manualmente (`workflow_dispatch`): ele executa build e empacotamento sem publicar release e deixa os `.exe` gerados no artefato `crmini-windows` da execução (retenção de 7 dias).
+
 ## Limitações / próximos passos
 
-- O aplicativo empacotado para Windows (instalador NSIS + portable) ainda não está configurado. O empacotamento é o próximo passo, incluindo `electron-builder`, ícone e assinatura.
+- O empacotamento Windows está configurado para NSIS + portable (x64). macOS e Linux empacotados continuam fora do escopo.
+- Os binários não são assinados: o SmartScreen exibe aviso na primeira execução (ver [docs/empacotamento-windows.md](../docs/empacotamento-windows.md)).
+- Não há atualização automática (`electron-updater`) nem verificação de nova versão dentro do app.
