@@ -1,0 +1,110 @@
+name: Release
+
+# Publica os instaladores do Windows no GitHub Releases ao enviar uma tag `v*`.
+on:
+  push:
+    tags:
+      - "v*"
+  # Execução manual: gera os executáveis (artefato `crmini-windows`) sem
+  # publicar a release.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      # Falha antes do empacotamento (que é caro) se a tag não casar com a versão.
+      - name: Conferir versão da tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          $tagVersion = "${{ github.ref_name }}".TrimStart("v")
+          $packageVersion = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ($tagVersion -ne $packageVersion) {
+            Write-Error "A tag ${{ github.ref_name }} não corresponde à version '$packageVersion' do package.json."
+            exit 1
+          }
+          Write-Host "Versão '$packageVersion' confere com a tag ${{ github.ref_name }}."
+
+      - name: Gerar build standalone do Next.js
+        run: npm run desktop:build
+
+      # O binário nativo do better-sqlite3 é por plataforma: o pacote precisa ser
+      # gerado no Windows para conter o prebuild win32-x64 correto.
+      - name: Empacotar para Windows
+        run: npx electron-builder --win --x64 --publish never
+
+      # Valida o conteúdo de dist/win-unpacked, que é o que os instaladores
+      # carregam: falhar aqui é barato e evita publicar um pacote quebrado.
+      - name: Validar pacote gerado
+        shell: pwsh
+        run: |
+          $requiredFiles = @(
+            "dist/win-unpacked/resources/app/server.js",
+            "dist/win-unpacked/resources/app/database/migrate.cjs",
+            "dist/win-unpacked/resources/icon.ico"
+          )
+          $missing = @()
+          foreach ($file in $requiredFiles) {
+            if (-not (Test-Path -LiteralPath $file -PathType Leaf)) {
+              $missing += $file
+            }
+          }
+
+          $sqliteDir = "dist/win-unpacked/resources/app/node_modules/better-sqlite3"
+          $prebuilds = @()
+          if (Test-Path -LiteralPath $sqliteDir -PathType Container) {
+            $prebuilds = @(Get-ChildItem -LiteralPath $sqliteDir -Filter "*.node" -File -Recurse)
+          }
+          if ($prebuilds.Count -eq 0) {
+            $missing += "$sqliteDir/*.node"
+          }
+
+          if ($missing.Count -gt 0) {
+            foreach ($item in $missing) {
+              Write-Host "::error::Pacote inválido: item ausente em '$item'."
+            }
+            Write-Host "Validação do pacote falhou: $($missing.Count) item(ns) ausente(s)."
+            exit 1
+          }
+          Write-Host "Pacote validado: $($prebuilds.Count) prebuild(s) do better-sqlite3 encontrado(s)."
+
+      # Mantém os executáveis disponíveis na execução (inclusive no
+      # workflow_dispatch, que não publica release). `success()` em vez de
+      # `always()` para não mascarar uma falha real do empacotamento com o erro
+      # de "nenhum arquivo encontrado".
+      - name: Disponibilizar executáveis como artefato
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crmini-windows
+          path: dist/*.exe
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Publicar release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.exe
+          fail_on_unmatched_files: true
+          draft: false
