@@ -46,6 +46,11 @@ declare global {
         error?: string;
       }>;
       getAssetsPath(): Promise<string | null>;
+      // Opcionais: mocks e versões anteriores do preload podem não expor.
+      getSidebarCollapsed?(): Promise<boolean>;
+      setSidebarCollapsed?(
+        collapsed: boolean,
+      ): Promise<{ ok: boolean; error?: string }>;
       // Opcional: o renderer também roda fora do Electron (navegador/dev).
       updates?: {
         getState(): Promise<UpdateSnapshot>;

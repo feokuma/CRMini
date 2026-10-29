@@ -24,6 +24,8 @@ type Bridge = {
   getDatabasePath: () => Promise<unknown>;
   chooseDatabase: () => Promise<unknown>;
   getAssetsPath: () => Promise<unknown>;
+  getSidebarCollapsed: () => Promise<unknown>;
+  setSidebarCollapsed: (collapsed: boolean) => Promise<unknown>;
   updates: UpdateBridge;
 };
 
@@ -72,6 +74,8 @@ describe("preload do Electron", () => {
         getDatabasePath: expect.any(Function),
         getAssetsPath: expect.any(Function),
         chooseDatabase: expect.any(Function),
+        getSidebarCollapsed: expect.any(Function),
+        setSidebarCollapsed: expect.any(Function),
         updates: expect.any(Object),
       }),
     );
@@ -94,6 +98,31 @@ describe("preload do Electron", () => {
     expect(invoke).toHaveBeenNthCalledWith(2, "assets:get-path");
     expect(invoke).toHaveBeenNthCalledWith(3, "database:choose");
     expect(invoke).toHaveBeenCalledTimes(3);
+  });
+
+  it("encaminha a preferência da barra lateral para os canais IPC esperados", async () => {
+    const invoke = vi
+      .fn()
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce({ ok: true });
+    const { exposed } = loadPreload({ invoke });
+    const bridge = exposed.crmDesktop as Bridge;
+
+    await expect(bridge.getSidebarCollapsed()).resolves.toBe(true);
+    await expect(bridge.setSidebarCollapsed(true)).resolves.toEqual({
+      ok: true,
+    });
+
+    expect(invoke).toHaveBeenNthCalledWith(
+      1,
+      "preferences:get-sidebar-collapsed",
+    );
+    expect(invoke).toHaveBeenNthCalledWith(
+      2,
+      "preferences:set-sidebar-collapsed",
+      true,
+    );
+    expect(invoke).toHaveBeenCalledTimes(2);
   });
 
   it("encaminha updates para os canais IPC esperados", async () => {
@@ -147,6 +176,8 @@ describe("preload do Electron", () => {
       "chooseDatabase",
       "getAssetsPath",
       "getDatabasePath",
+      "getSidebarCollapsed",
+      "setSidebarCollapsed",
       "updates",
     ]);
     expect(bridge).not.toHaveProperty("ipcRenderer");

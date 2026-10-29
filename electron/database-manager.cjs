@@ -58,6 +58,37 @@ function createDatabaseManager({
     savePreferences({ databasePath });
   }
 
+  // Qualquer valor que não seja `true` vale sidebar expandida.
+  function savedSidebarCollapsed() {
+    return readPreferences().sidebarCollapsed === true;
+  }
+
+  function saveSidebarCollapsed(collapsed) {
+    if (typeof collapsed !== "boolean") {
+      throw new TypeError("sidebarCollapsed deve ser booleano.");
+    }
+    savePreferences({ sidebarCollapsed: collapsed });
+  }
+
+  function handleGetSidebarCollapsed(event) {
+    return trustedSender(event) ? savedSidebarCollapsed() : false;
+  }
+
+  function handleSetSidebarCollapsed(event, collapsed) {
+    if (!trustedSender(event)) {
+      return { ok: false, error: "Origem não autorizada." };
+    }
+    if (typeof collapsed !== "boolean") {
+      return { ok: false, error: "Valor inválido." };
+    }
+    try {
+      saveSidebarCollapsed(collapsed);
+      return { ok: true };
+    } catch {
+      return { ok: false, error: "Não foi possível salvar a preferência." };
+    }
+  }
+
   function markLegacyAssetsMigrated(timestamp = new Date().toISOString()) {
     savePreferences({ legacyAssetsMigratedAt: timestamp });
   }
@@ -194,6 +225,10 @@ function createDatabaseManager({
     savePreferences,
     savedDatabasePath,
     saveDatabasePath,
+    savedSidebarCollapsed,
+    saveSidebarCollapsed,
+    handleGetSidebarCollapsed,
+    handleSetSidebarCollapsed,
     markLegacyAssetsMigrated,
     trustedSender,
     handleGetPath,

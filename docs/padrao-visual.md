@@ -81,8 +81,9 @@ Rótulos de campo usam `10px`, peso `500`, cor `#555e55`. Destaques pontuais den
 `src/app/layout.tsx` monta `div.app-shell` com `AppSidebar` e o conteúdo da rota:
 
 - `.app-shell` — `display: flex`, `min-height: 100vh`.
-- `.sidebar` — `248px` de largura, `position: sticky`, `height: 100vh`, borda direita `--line`, `padding: 24px 16px`, `gap: 22px`. Em `900px` cai para `215px`; em `680px` vira uma faixa de `62px` com ícones centralizados e rótulos ocultos.
+- `.sidebar` — `248px` de largura (`--sidebar-width`), `position: sticky`, `height: 100dvh`, borda direita `--line`, `padding: 24px 16px`, `gap: 22px`. O botão `.sidebar-toggle` recolhe a barra para `72px` (`--sidebar-width-compact`, só ícones, rótulos com `font-size: 0`); em `900px` a barra expandida cai para `215px` e em `680px` vira uma faixa automática de `62px` com ícones centralizados, rótulos ocultos e o botão de recolher oculto.
 - `.nav-item` — `41px` de altura, `13px`, ícone em `span` de `17px`; estado ativo com fundo `--accent-soft`, texto `--accent`, `font-weight: 600` e `border-left: 3px solid var(--accent)`.
+- Preferência de layout — a barra recolhida é lembrada em `localStorage` (`crmini.sidebar.collapsed`) no navegador e em `userData/preferences.json` (`sidebarCollapsed`) no Electron, via `preload`/IPC (`src/lib/sidebar-preference.ts`).
 
 Cada página renderiza seu próprio `<main>`. O padrão é `main.records-page`, que aplica `width: min(100%, var(--content-max-width))`, `margin: 0 auto`, `padding: clamp(24px, 4vw, 48px) var(--content-gutter)` e `flex: 1`.
 
@@ -242,13 +243,13 @@ Telas de detalhe e de preferências usam exatamente o mesmo esqueleto da seção
 
 Breakpoints reais do projeto: `1100px`, `900px`, `680px`, `600px` e `min-width: 901px`. NÃO invente novos breakpoints.
 
-| Largura    | Comportamento esperado                                                                                                                              |
-| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `≤ 1100px` | Grade de oportunidades rola horizontalmente (exceção justificada), seus filtros passam a 2 colunas e a linha de clientes quebra em duas linhas      |
-| `≤ 900px`  | Sidebar `215px`; linha de contato em 4 colunas com as ações em linha própria; filtros de contatos/tarefas em 2 colunas; `.metric-grid` em 2 colunas |
-| `≤ 680px`  | Sidebar `62px`; `form-grid` em 1 coluna; `h1` `25px`; `form-actions` com menos padding; `.metric-grid` em 1 coluna                                  |
-| `≤ 600px`  | Filtros em 1 coluna; listas viram blocos empilhados; cabeçalho de tabela oculto; alvos de toque com pelo menos `38px` de altura                     |
-| `≥ 901px`  | `.metric-grid` do painel em 4 colunas                                                                                                               |
+| Largura    | Comportamento esperado                                                                                                                                                           |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `≤ 1100px` | Grade de oportunidades rola horizontalmente (exceção justificada), seus filtros passam a 2 colunas e a linha de clientes quebra em duas linhas                                   |
+| `≤ 900px`  | Sidebar `215px` (recolhida permanece `72px`); linha de contato em 4 colunas com as ações em linha própria; filtros de contatos/tarefas em 2 colunas; `.metric-grid` em 2 colunas |
+| `≤ 680px`  | Sidebar automática de `62px`, com o botão de recolher oculto; `form-grid` em 1 coluna; `h1` `25px`; `form-actions` com menos padding; `.metric-grid` em 1 coluna                 |
+| `≤ 600px`  | Filtros em 1 coluna; listas viram blocos empilhados; cabeçalho de tabela oculto; alvos de toque com pelo menos `38px` de altura                                                  |
+| `≥ 901px`  | `.metric-grid` do painel em 4 colunas                                                                                                                                            |
 
 Regras:
 
@@ -259,6 +260,7 @@ Regras:
 - Listas de contatos e de tarefas NÃO DEVEM depender de `overflow: hidden` para esconder colunas: em `≤ 900px` a linha de contato usa 4 colunas e as ações ocupam uma linha própria; em `≤ 600px` a linha vira bloco empilhado.
 - Filtros DEVEM reduzir para 2 colunas flexíveis em `≤ 900px` e para 1 coluna em `≤ 600px`; nenhum controle pode manter `minmax()` com mínimo fixo que estoure a viewport.
 - A sidebar usa `height: 100dvh` com rolagem vertical própria, para continuar navegável em viewports baixas.
+- A sidebar expandida usa `248px` e pode ser recolhida para `72px` (só ícones) pelo `.sidebar-toggle`; a preferência é híbrida (`localStorage` no navegador, `preferences.json` no Electron). Em `≤ 680px` ela fica sempre em `62px` e o botão é oculto.
 - Alvos de toque (links de ação, breadcrumbs, checkbox de filtro, `select` de status) DEVEM ter pelo menos `38px` de altura em `≤ 600px`.
 
 ## 12. Acessibilidade

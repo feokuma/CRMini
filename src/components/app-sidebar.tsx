@@ -3,7 +3,11 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import {
+  readSidebarCollapsed,
+  writeSidebarCollapsed,
+} from "@/lib/sidebar-preference";
 
 const items = [
   ["/", "⌂", "Visão geral"],
@@ -16,9 +20,32 @@ const items = [
 export default function AppSidebar() {
   const pathname = usePathname();
   const [desktop, setDesktop] = useState(false);
-  useEffect(() => setDesktop(Boolean(window.crmDesktop)), []);
+  const [collapsed, setCollapsed] = useState(false);
+  const userToggled = useRef(false);
+
+  useEffect(() => {
+    setDesktop(Boolean(window.crmDesktop));
+    let active = true;
+    void readSidebarCollapsed().then((stored) => {
+      if (active && !userToggled.current) setCollapsed(stored);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  function toggleSidebar() {
+    userToggled.current = true;
+    const next = !collapsed;
+    setCollapsed(next);
+    void writeSidebarCollapsed(next);
+  }
+
   return (
-    <aside className="sidebar">
+    <aside
+      id="app-sidebar"
+      className={`sidebar${collapsed ? " collapsed" : ""}`}
+    >
       <Link className="brand" href="/" aria-label="CRMini">
         <Image
           className="brand-mark"
@@ -51,7 +78,32 @@ export default function AppSidebar() {
           );
         })}
       </nav>
-      {desktop && <Link className={`nav-item sidebar-settings${pathname === "/configuracoes" ? " active" : ""}`} href="/configuracoes" aria-current={pathname === "/configuracoes" ? "page" : undefined}><span aria-hidden="true">⚙</span>Configurações</Link>}
+      {desktop && (
+        <Link
+          className={`nav-item sidebar-settings${pathname === "/configuracoes" ? " active" : ""}`}
+          href="/configuracoes"
+          title="Configurações"
+          aria-current={pathname === "/configuracoes" ? "page" : undefined}
+        >
+          <span aria-hidden="true">⚙</span>Configurações
+        </Link>
+      )}
+      <button
+        type="button"
+        className="sidebar-toggle"
+        onClick={toggleSidebar}
+        aria-expanded={!collapsed}
+        aria-controls="app-sidebar"
+        aria-label={
+          collapsed ? "Expandir barra lateral" : "Recolher barra lateral"
+        }
+        title={collapsed ? "Expandir barra lateral" : "Recolher barra lateral"}
+      >
+        <span aria-hidden="true">{collapsed ? "»" : "«"}</span>
+        <span className="sidebar-toggle-label" aria-hidden="true">
+          {collapsed ? "Expandir" : "Recolher"}
+        </span>
+      </button>
     </aside>
   );
 }

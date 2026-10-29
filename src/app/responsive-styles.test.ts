@@ -40,6 +40,16 @@ function topLevelBlocks(source: string): CssBlock[] {
 
 const topBlocks = topLevelBlocks(css);
 
+/**
+ * CSS sem `@import` e sem comentários. Sem isso o prelude da primeira regra
+ * carrega o `@import` e regras precedidas de comentário não batem com o
+ * seletor exato (`:root`, `.sidebar.collapsed`).
+ */
+const cleanCss = css
+  .replace(/@import[^\n]*/g, "")
+  .replace(/\/\*[\s\S]*?\*\//g, "");
+const cleanTopBlocks = topLevelBlocks(cleanCss);
+
 /** Normaliza espaços para comparar valores que o Prettier quebra em várias linhas. */
 function normalize(value: string): string {
   return value.replace(/\s+/g, " ").trim();
@@ -349,5 +359,70 @@ describe("Responsividade dos estilos globais", () => {
       ),
       "metadados do cliente deveriam ficar em 1 coluna em ≤ 1100px",
     ).toBe(true);
+  });
+
+  it("define os tokens de largura da barra lateral em :root", () => {
+    const root = cleanTopBlocks.find(
+      (block) => normalize(block.prelude) === ":root",
+    );
+    expect(root, ":root ausente").toBeDefined();
+    if (!root) return;
+
+    expect(value(root.body, "--sidebar-width")).toBe("248px");
+    expect(value(root.body, "--sidebar-width-compact")).toBe("72px");
+  });
+
+  it("liga a largura da sidebar ao token e anima a transição", () => {
+    const sidebarRules = cleanTopBlocks.filter((block) =>
+      selectorParts(block.prelude).includes(".sidebar"),
+    );
+
+    const widths = sidebarRules
+      .map((block) => value(block.body, "width"))
+      .filter((width): width is string => width !== undefined);
+    expect(widths, "sidebar sem var(--sidebar-width)").toContain(
+      "var(--sidebar-width)",
+    );
+
+    // A transição de largura é o que dá o efeito de recolher/expandir.
+    const transitions = sidebarRules
+      .map((block) => value(block.body, "transition"))
+      .filter((transition): transition is string => transition !== undefined);
+    expect(transitions.some((transition) => transition.includes("width"))).toBe(
+      true,
+    );
+  });
+
+  it("recolhe a sidebar com a largura compacta e esconde os rótulos", () => {
+    const collapsedWidths = rulesWithSelector(cleanCss, ".sidebar.collapsed")
+      .map((block) => value(block.body, "width"))
+      .filter((width): width is string => width !== undefined);
+    expect(
+      collapsedWidths,
+      "regra de largura para .sidebar.collapsed ausente",
+    ).toContain("var(--sidebar-width-compact)");
+
+    const navItem = rulesWithSelector(
+      cleanCss,
+      ".sidebar.collapsed .nav-item",
+    );
+    expect(
+      navItem.some((block) => value(block.body, "font-size") === "0"),
+      ".sidebar.collapsed .nav-item deveria zerar o font-size",
+    ).toBe(true);
+  });
+
+  it("compacta a sidebar recolhida e esconde o botão em ≤ 680px", () => {
+    const collapsed = ruleInMedia("(max-width: 680px)", ".sidebar.collapsed");
+    expect(value(collapsed.body, "width")).toBe("62px");
+
+    // Sem espaço para o rótulo, o botão sai de cena e o recolhimento é fixo.
+    const toggle = ruleInMedia("(max-width: 680px)", ".sidebar-toggle");
+    expect(value(toggle.body, "display")).toBe("none");
+  });
+
+  it("desliga a transição da sidebar com prefers-reduced-motion", () => {
+    const sidebar = ruleInMedia("(prefers-reduced-motion: reduce)", ".sidebar");
+    expect(value(sidebar.body, "transition")).toBe("none");
   });
 });

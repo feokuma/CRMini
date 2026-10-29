@@ -140,6 +140,12 @@ if (!gotLock) {
   ipcMain.handle("assets:get-path", (event) =>
     databaseManager.handleGetAssetsPath(event),
   );
+  ipcMain.handle("preferences:get-sidebar-collapsed", (event) =>
+    databaseManager.handleGetSidebarCollapsed(event),
+  );
+  ipcMain.handle("preferences:set-sidebar-collapsed", (event, collapsed) =>
+    databaseManager.handleSetSidebarCollapsed(event, collapsed),
+  );
 
   // Antes da janela: o preload já pode chamar `updates:*` no primeiro render e o
   // estado inicial precisa estar disponível. O updater não segura a inicialização:

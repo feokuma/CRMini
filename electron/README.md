@@ -26,6 +26,8 @@ Antes de iniciar o Next.js, o app aplica as migrations pendentes do banco escolh
 
 O servidor fica limitado a `127.0.0.1` em uma porta livre. Esta aplicação inicia e encerra o Next.js junto da janela. Na primeira inicialização, escolha o banco padrão (`app.getPath('userData')/crm.sqlite`), abrir banco existente ou criar/selecionar arquivo; a escolha é persistida em `userData/preferences.json`. A sidebar Configurações permite trocar o caminho e reinicia o app após confirmação do seletor nativo. O banco anterior nunca é movido ou apagado. Se o caminho persistido não estiver disponível ou for inválido, o app informa o problema e oferece seletor explícito de recuperação; cancelar encerra o app preservando a preferência e sem criar arquivo vazio. Para backup, encerre o app antes de copiar o arquivo, ou use a API SQLite de backup.
 
+O layout da barra lateral (expandida ou recolhida) também fica em `userData/preferences.json`, no campo `sidebarCollapsed` (`true` = recolhida; ausente ou qualquer outro valor = expandida). A preferência é gravada pelo processo principal via IPC (`preferences:get-sidebar-collapsed`/`preferences:set-sidebar-collapsed`) porque o servidor usa uma porta aleatória: a origem `127.0.0.1:<porta>` muda a cada execução e o `localStorage` do renderer não seria reaproveitado. No navegador (sem Electron), o fallback é `localStorage` com a chave `crmini.sidebar.collapsed`.
+
 ## Caminhos de recursos e dados
 
 O servidor Next resolve seus diretórios por variáveis de ambiente injetadas pelo Electron:

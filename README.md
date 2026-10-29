@@ -52,6 +52,8 @@ O comando `npm run desktop` executa `desktop:build` (equivalente a `npm run buil
 
 O servidor standalone roda sob `ELECTRON_RUN_AS_NODE`. O `better-sqlite3` 13 usa prebuilds N-API (`prebuilds/<plataforma>-<arch>.node`), compatíveis com Node e Electron, então não é preciso reconstruir o módulo para cada runtime. O comando `npm run desktop` executa `npm run check:electron-abi` antes de abrir a janela e falha com uma mensagem explícita se o prebuild da plataforma não carregar.
 
+A preferência de barra lateral recolhida/expandida é salva em `userData/preferences.json` no Electron e em `localStorage` (`crmini.sidebar.collapsed`) no navegador.
+
 ## Distribuição (GitHub Releases)
 
 O aplicativo desktop é distribuído pelo GitHub Releases: enviar uma tag `vX.Y.Z` dispara o workflow `.github/workflows/release.yml`, que gera os instaladores em um runner `windows-latest` e os anexa à release da tag.

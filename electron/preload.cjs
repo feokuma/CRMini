@@ -15,6 +15,10 @@ contextBridge.exposeInMainWorld("crmDesktop", {
   getDatabasePath: () => ipcRenderer.invoke("database:get-path"),
   chooseDatabase: () => ipcRenderer.invoke("database:choose"),
   getAssetsPath: () => ipcRenderer.invoke("assets:get-path"),
+  getSidebarCollapsed: () =>
+    ipcRenderer.invoke("preferences:get-sidebar-collapsed"),
+  setSidebarCollapsed: (collapsed) =>
+    ipcRenderer.invoke("preferences:set-sidebar-collapsed", collapsed),
   updates: {
     getState: () => ipcRenderer.invoke("updates:get-state"),
     check: () => ipcRenderer.invoke("updates:check"),

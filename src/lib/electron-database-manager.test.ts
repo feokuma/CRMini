@@ -28,6 +28,13 @@ type Manager = {
   savePreferences: (patch: Record<string, unknown>) => void;
   savedDatabasePath: () => string | null;
   saveDatabasePath: (file: string) => void;
+  savedSidebarCollapsed: () => boolean;
+  saveSidebarCollapsed: (collapsed: boolean) => void;
+  handleGetSidebarCollapsed: (event: unknown) => boolean;
+  handleSetSidebarCollapsed: (
+    event: unknown,
+    collapsed: unknown,
+  ) => { ok: boolean; error?: string };
   markLegacyAssetsMigrated: (timestamp?: string) => void;
   trustedSender: (event: unknown) => boolean;
   handleGetPath: (event: unknown) => string | null;
@@ -563,5 +570,135 @@ describe("preferências como objeto e pasta de imagens", () => {
         senderFrame: { url: "http://127.0.0.1:9999/configuracoes" },
       }),
     ).toBeNull();
+  });
+});
+
+describe("preferência da barra lateral", () => {
+  it("considera ausente como barra expandida", () => {
+    const { manager } = setup();
+
+    expect(manager.savedSidebarCollapsed()).toBe(false);
+  });
+
+  it("lê os booleanos persistidos", () => {
+    const { manager, preferences } = setup();
+
+    writePreferences(preferences, { sidebarCollapsed: true });
+    expect(manager.savedSidebarCollapsed()).toBe(true);
+
+    writePreferences(preferences, { sidebarCollapsed: false });
+    expect(manager.savedSidebarCollapsed()).toBe(false);
+  });
+
+  it.each(["true", 1, null, {}, []])(
+    "trata valor inválido como expandida (%s)",
+    (sidebarCollapsed) => {
+      const { manager, preferences } = setup();
+      writePreferences(preferences, { sidebarCollapsed });
+
+      expect(manager.savedSidebarCollapsed()).toBe(false);
+    },
+  );
+
+  it("trata JSON corrompido como expandida", () => {
+    const { manager, preferences } = setup();
+    fs.mkdirSync(path.dirname(preferences), { recursive: true });
+    fs.writeFileSync(preferences, "{not-json");
+
+    expect(manager.savedSidebarCollapsed()).toBe(false);
+  });
+
+  it("saveSidebarCollapsed preserva os demais campos das preferências", () => {
+    const { manager, preferences } = setup();
+    writePreferences(preferences, {
+      databasePath: "/data/crm.sqlite",
+      legacyAssetsMigratedAt: "2026-10-29T00:00:00.000Z",
+    });
+
+    manager.saveSidebarCollapsed(true);
+
+    expect(JSON.parse(fs.readFileSync(preferences, "utf8"))).toEqual({
+      databasePath: "/data/crm.sqlite",
+      legacyAssetsMigratedAt: "2026-10-29T00:00:00.000Z",
+      sidebarCollapsed: true,
+    });
+
+    manager.saveSidebarCollapsed(false);
+
+    expect(manager.savedSidebarCollapsed()).toBe(false);
+  });
+
+  it("saveSidebarCollapsed exige booleano", () => {
+    const { manager } = setup();
+
+    expect(() =>
+      manager.saveSidebarCollapsed("true" as unknown as boolean),
+    ).toThrow(TypeError);
+  });
+
+  it("handleGetSidebarCollapsed só revela o valor para origem confiável", () => {
+    const { manager, preferences } = setup();
+    writePreferences(preferences, { sidebarCollapsed: true });
+
+    expect(manager.handleGetSidebarCollapsed(trustedEvent)).toBe(true);
+    expect(
+      manager.handleGetSidebarCollapsed({
+        senderFrame: { url: "http://127.0.0.1:9999/configuracoes" },
+      }),
+    ).toBe(false);
+    expect(manager.handleGetSidebarCollapsed({})).toBe(false);
+  });
+
+  it("handleSetSidebarCollapsed persiste true e false", () => {
+    const { manager, preferences } = setup();
+
+    expect(manager.handleSetSidebarCollapsed(trustedEvent, true)).toEqual({
+      ok: true,
+    });
+    expect(JSON.parse(fs.readFileSync(preferences, "utf8"))).toEqual({
+      sidebarCollapsed: true,
+    });
+
+    expect(manager.handleSetSidebarCollapsed(trustedEvent, false)).toEqual({
+      ok: true,
+    });
+    expect(manager.savedSidebarCollapsed()).toBe(false);
+  });
+
+  it("handleSetSidebarCollapsed rejeita origem não confiável sem escrever", () => {
+    const { manager, preferences } = setup();
+
+    expect(
+      manager.handleSetSidebarCollapsed(
+        { senderFrame: { url: "http://127.0.0.1:9999/configuracoes" } },
+        true,
+      ),
+    ).toEqual({ ok: false, error: "Origem não autorizada." });
+
+    expect(fs.existsSync(preferences)).toBe(false);
+  });
+
+  it.each(["true", 1, null, undefined, {}])(
+    "handleSetSidebarCollapsed rejeita payload inválido (%s)",
+    (collapsed) => {
+      const { manager, preferences } = setup();
+
+      expect(manager.handleSetSidebarCollapsed(trustedEvent, collapsed)).toEqual(
+        { ok: false, error: "Valor inválido." },
+      );
+      expect(fs.existsSync(preferences)).toBe(false);
+    },
+  );
+
+  it("handleSetSidebarCollapsed devolve erro amigável quando a escrita falha", () => {
+    const { manager } = setup();
+    vi.spyOn(fs, "writeFileSync").mockImplementation(() => {
+      throw new Error("EACCES: permissão negada");
+    });
+
+    expect(manager.handleSetSidebarCollapsed(trustedEvent, true)).toEqual({
+      ok: false,
+      error: "Não foi possível salvar a preferência.",
+    });
   });
 });

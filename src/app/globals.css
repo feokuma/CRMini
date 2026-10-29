@@ -10,6 +10,8 @@
   --wash: #f5f5f5;
   --content-max-width: 1216px;
   --content-gutter: clamp(15px, 4vw, 48px);
+  --sidebar-width: 248px;
+  --sidebar-width-compact: 72px;
 }
 * {
   box-sizing: border-box;
@@ -26,7 +28,7 @@ body {
   display: flex;
 }
 .sidebar {
-  width: 248px;
+  width: var(--sidebar-width);
   flex-shrink: 0;
   border-right: 1px solid var(--line);
   padding: 28px 18px 16px;
@@ -1867,6 +1869,7 @@ main.records-page .company-logo img {
   overflow-x: hidden;
   gap: 22px;
   padding: 24px 16px;
+  transition: width 180ms ease;
 }
 .brand {
   gap: 9px;
@@ -2126,5 +2129,80 @@ main.records-page .settings-actions {
 @media (max-width: 600px) {
   .update-chip-action {
     min-height: 38px;
+  }
+}
+
+/* Barra lateral recolhível (preferência local). */
+.sidebar.collapsed {
+  width: var(--sidebar-width-compact);
+  padding: 24px 12px;
+  align-items: center;
+}
+.sidebar.collapsed .brand {
+  justify-content: center;
+  padding: 0;
+}
+.sidebar.collapsed .brand-name {
+  display: none;
+}
+.sidebar.collapsed nav {
+  width: 100%;
+}
+.sidebar.collapsed .nav-item {
+  width: 100%;
+  justify-content: center;
+  gap: 0;
+  padding: 0;
+  font-size: 0;
+}
+.sidebar.collapsed .nav-item > span {
+  font-size: 18px;
+}
+.sidebar-toggle {
+  width: 100%;
+  height: 38px;
+  border: 1px solid var(--line);
+  background: transparent;
+  border-radius: 2px;
+  color: var(--muted);
+  font:
+    12px "DM Sans",
+    Arial,
+    sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  margin-top: auto;
+  padding: 0 11px;
+}
+.sidebar-toggle:hover {
+  background: var(--wash);
+}
+.sidebar-toggle:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px #3986531c;
+  outline: 0;
+}
+.sidebar.collapsed .sidebar-toggle {
+  justify-content: center;
+  padding: 0;
+}
+.sidebar.collapsed .sidebar-toggle-label {
+  display: none;
+}
+@media (max-width: 680px) {
+  .sidebar.collapsed {
+    width: 62px;
+    padding: 20px 8px;
+  }
+  .sidebar-toggle {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sidebar {
+    transition: none;
   }
 }
