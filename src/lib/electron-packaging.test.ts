@@ -349,7 +349,7 @@ describe("electron-builder: canal de atualização", () => {
     expect(publish).toEqual({
       provider: "github",
       owner: "feokuma",
-      repo: "crminho",
+      repo: "CRMini",
       releaseType: "release",
     });
   });

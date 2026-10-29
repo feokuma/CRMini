@@ -60,7 +60,7 @@
     "publish": {
       "provider": "github",
       "owner": "feokuma",
-      "repo": "crminho",
+      "repo": "CRMini",
       "releaseType": "release"
     },
     "npmRebuild": false,
