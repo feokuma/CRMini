@@ -254,3 +254,56 @@ it("falha prontamente se o processo próprio morrer antes da readiness", async (
   child.emit("exit", 1);
   await expect(pending).rejects.toThrow(/encerrou antes de ficar pronto/);
 });
+
+function readyRequest() {
+  return (_url: string, callback: (response: { resume: () => void }) => void) => {
+    const req = new EventEmitter();
+    queueMicrotask(() => callback({ resume() {} }));
+    return req;
+  };
+}
+
+it("passa CRM_ASSETS_DIR ao filho quando assetsDir é informado", async () => {
+  const child = fakeChild();
+  child.kill = vi.fn(() => {
+    child.exitCode = 0;
+    child.emit("exit", 0);
+  });
+  const spawn = vi.fn(() => child);
+  const server = createServerLifecycle({
+    processSpawner: spawn,
+    projectDir: "/crm",
+    isDevelopment: true,
+    env: {},
+  });
+
+  await server.start("/isolated/B.sqlite", {
+    assetsDir: "/isolated/assets",
+    request: readyRequest(),
+  });
+
+  expect(spawn.mock.calls[0][2]).toMatchObject({
+    env: { CRM_ASSETS_DIR: "/isolated/assets" },
+  });
+  await server.stop();
+});
+
+it("não define CRM_ASSETS_DIR quando assetsDir é omitido", async () => {
+  const child = fakeChild();
+  child.kill = vi.fn(() => {
+    child.exitCode = 0;
+    child.emit("exit", 0);
+  });
+  const spawn = vi.fn(() => child);
+  const server = createServerLifecycle({
+    processSpawner: spawn,
+    projectDir: "/crm",
+    isDevelopment: true,
+    env: {},
+  });
+
+  await server.start("/isolated/B.sqlite", { request: readyRequest() });
+
+  expect(spawn.mock.calls[0][2].env).not.toHaveProperty("CRM_ASSETS_DIR");
+  await server.stop();
+});

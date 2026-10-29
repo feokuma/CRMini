@@ -23,6 +23,7 @@ type UpdateBridge = {
 type Bridge = {
   getDatabasePath: () => Promise<unknown>;
   chooseDatabase: () => Promise<unknown>;
+  getAssetsPath: () => Promise<unknown>;
   updates: UpdateBridge;
 };
 
@@ -69,6 +70,7 @@ describe("preload do Electron", () => {
       "crmDesktop",
       expect.objectContaining({
         getDatabasePath: expect.any(Function),
+        getAssetsPath: expect.any(Function),
         chooseDatabase: expect.any(Function),
         updates: expect.any(Object),
       }),
@@ -79,16 +81,19 @@ describe("preload do Electron", () => {
     const invoke = vi
       .fn()
       .mockResolvedValueOnce("/user/crm.sqlite")
+      .mockResolvedValueOnce("/user/assets")
       .mockResolvedValueOnce({ ok: true });
     const { exposed } = loadPreload({ invoke });
     const bridge = exposed.crmDesktop as Bridge;
 
     await expect(bridge.getDatabasePath()).resolves.toBe("/user/crm.sqlite");
+    await expect(bridge.getAssetsPath()).resolves.toBe("/user/assets");
     await expect(bridge.chooseDatabase()).resolves.toEqual({ ok: true });
 
     expect(invoke).toHaveBeenNthCalledWith(1, "database:get-path");
-    expect(invoke).toHaveBeenNthCalledWith(2, "database:choose");
-    expect(invoke).toHaveBeenCalledTimes(2);
+    expect(invoke).toHaveBeenNthCalledWith(2, "assets:get-path");
+    expect(invoke).toHaveBeenNthCalledWith(3, "database:choose");
+    expect(invoke).toHaveBeenCalledTimes(3);
   });
 
   it("encaminha updates para os canais IPC esperados", async () => {
@@ -140,6 +145,7 @@ describe("preload do Electron", () => {
 
     expect(Object.keys(bridge).sort()).toEqual([
       "chooseDatabase",
+      "getAssetsPath",
       "getDatabasePath",
       "updates",
     ]);

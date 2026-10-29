@@ -45,6 +45,7 @@ declare global {
         unchanged?: boolean;
         error?: string;
       }>;
+      getAssetsPath(): Promise<string | null>;
       // Opcional: o renderer também roda fora do Electron (navegador/dev).
       updates?: {
         getState(): Promise<UpdateSnapshot>;

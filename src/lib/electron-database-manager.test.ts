@@ -24,10 +24,14 @@ const Database = require("better-sqlite3") as typeof import("better-sqlite3");
 
 type Manager = {
   preferencesFile: () => string;
+  readPreferences: () => Record<string, unknown>;
+  savePreferences: (patch: Record<string, unknown>) => void;
   savedDatabasePath: () => string | null;
   saveDatabasePath: (file: string) => void;
+  markLegacyAssetsMigrated: (timestamp?: string) => void;
   trustedSender: (event: unknown) => boolean;
   handleGetPath: (event: unknown) => string | null;
+  handleGetAssetsPath: (event: unknown) => string | null;
   handleChoose: (event: unknown) => Promise<{
     ok: boolean;
     canceled?: boolean;
@@ -487,5 +491,77 @@ describe("segurança da ponte IPC", () => {
     expect(dialog.showOpenDialog).not.toHaveBeenCalled();
     expect(fs.existsSync(preferences)).toBe(false);
     expect(app.relaunch).not.toHaveBeenCalled();
+  });
+});
+
+describe("preferências como objeto e pasta de imagens", () => {
+  it("readPreferences retorna {} quando o arquivo não existe", () => {
+    const { manager } = setup();
+    expect(manager.readPreferences()).toEqual({});
+  });
+
+  it("readPreferences tolera JSON corrompido e valor não-objeto", () => {
+    const { manager, preferences } = setup();
+
+    fs.mkdirSync(path.dirname(preferences), { recursive: true });
+    fs.writeFileSync(preferences, "{not-json");
+    expect(manager.readPreferences()).toEqual({});
+
+    fs.writeFileSync(preferences, "42");
+    expect(manager.readPreferences()).toEqual({});
+  });
+
+  it("saveDatabasePath preserva outros campos das preferências", () => {
+    const { manager, preferences } = setup();
+    writePreferences(preferences, {
+      databasePath: "/data/a.sqlite",
+      legacyAssetsMigratedAt: "2026-10-29T00:00:00.000Z",
+    });
+
+    manager.saveDatabasePath("/data/b.sqlite");
+
+    expect(JSON.parse(fs.readFileSync(preferences, "utf8"))).toEqual({
+      databasePath: "/data/b.sqlite",
+      legacyAssetsMigratedAt: "2026-10-29T00:00:00.000Z",
+    });
+  });
+
+  it("markLegacyAssetsMigrated grava o timestamp ISO", () => {
+    const { manager, preferences } = setup();
+    manager.saveDatabasePath("/data/crm.sqlite");
+
+    manager.markLegacyAssetsMigrated("2026-10-29T01:02:03.000Z");
+
+    expect(JSON.parse(fs.readFileSync(preferences, "utf8"))).toEqual({
+      databasePath: "/data/crm.sqlite",
+      legacyAssetsMigratedAt: "2026-10-29T01:02:03.000Z",
+    });
+  });
+
+  it("handleGetAssetsPath deriva a pasta de assets do banco salvo", () => {
+    const saved = createCrmDatabase(path.join(root, "saved", "crm.sqlite"));
+    const { manager, preferences } = setup();
+    writePreferences(preferences, { databasePath: saved });
+
+    expect(manager.handleGetAssetsPath(trustedEvent)).toBe(
+      path.join(root, "saved", "assets"),
+    );
+  });
+
+  it("handleGetAssetsPath retorna null sem banco salvo", () => {
+    const { manager } = setup();
+    expect(manager.handleGetAssetsPath(trustedEvent)).toBeNull();
+  });
+
+  it("handleGetAssetsPath retorna null para origem não confiável", () => {
+    const saved = createCrmDatabase(path.join(root, "saved", "crm.sqlite"));
+    const { manager, preferences } = setup();
+    writePreferences(preferences, { databasePath: saved });
+
+    expect(
+      manager.handleGetAssetsPath({
+        senderFrame: { url: "http://127.0.0.1:9999/configuracoes" },
+      }),
+    ).toBeNull();
   });
 });

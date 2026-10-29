@@ -49,7 +49,11 @@ function createServerLifecycle({
 
   async function start(
     databasePath,
-    { request = require("node:http").get, timeoutMs = 30000 } = {},
+    {
+      request = require("node:http").get,
+      timeoutMs = 30000,
+      assetsDir,
+    } = {},
   ) {
     const port = await reservePort();
     url = `http://${host}:${port}`;
@@ -65,6 +69,8 @@ function createServerLifecycle({
     // e logos sem depender de `process.cwd()` (que é somente leitura no pacote).
     if (resourcesDir !== undefined) childEnv.CRM_RESOURCES_DIR = resourcesDir;
     if (dataDir !== undefined) childEnv.CRM_DATA_DIR = dataDir;
+    // Pasta de imagens derivada do banco: junto dele, os logos viajam na cópia.
+    if (assetsDir !== undefined) childEnv.CRM_ASSETS_DIR = assetsDir;
 
     let args;
     let cwd;

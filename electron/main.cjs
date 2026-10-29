@@ -6,6 +6,11 @@ const { createDatabaseManager } = require("./database-manager.cjs");
 const { createServerLifecycle } = require("./server-lifecycle.cjs");
 const { createServerShutdown } = require("./server-shutdown.cjs");
 const { standaloneDir } = require("./resource-paths.cjs");
+const {
+  assetsDirFor,
+  legacyAssetsDir,
+  moveLegacyAssets,
+} = require("./assets-paths.cjs");
 const { createUpdater, registerUpdaterIpc } = require("./updater.cjs");
 
 const host = "127.0.0.1";
@@ -21,6 +26,9 @@ let quitAfterServerStopFailure = false;
 let quitting = false;
 // Caminho do banco em uso, para o servidor subir de novo se a instalação falhar.
 let activeDatabasePath;
+// Pasta de logos correspondente ao banco em uso; o reinício do servidor após
+// falha de atualização precisa repassá-la, senão os logos deixam de aparecer.
+let activeAssetsDir;
 
 // `lastCheckAt` fica em userData no mesmo estilo tolerante de `preferences.json`:
 // arquivo ausente ou corrompido vale `null` e a falha de escrita nunca chega ao
@@ -124,6 +132,9 @@ if (!gotLock) {
   ipcMain.handle("database:choose", (event) =>
     databaseManager.handleChoose(event),
   );
+  ipcMain.handle("assets:get-path", (event) =>
+    databaseManager.handleGetAssetsPath(event),
+  );
 
   // Antes da janela: o preload já pode chamar `updates:*` no primeiro render e o
   // estado inicial precisa estar disponível. O updater não segura a inicialização:
@@ -159,7 +170,9 @@ if (!gotLock) {
       if (!shutdown.stopped) return;
       let serverUrl;
       try {
-        serverUrl = await server.start(activeDatabasePath);
+        serverUrl = await server.start(activeDatabasePath, {
+          assetsDir: activeAssetsDir,
+        });
       } catch (error) {
         // Restaurar é melhor esforço: a falha aqui não pode derrubar o app.
         console.warn(
@@ -239,9 +252,29 @@ if (!gotLock) {
       return;
     }
     databaseManager.saveDatabasePath(databasePath);
+    // Pasta de imagens junto ao banco; na primeira abertura após a atualização,
+    // move os logos legados (`userData/tmp/assets`) uma única vez. Falha na
+    // migração só registra aviso e não impede a janela de abrir.
+    const assetsDir = assetsDirFor({ databasePath, dataDir });
+    if (databaseManager.readPreferences().legacyAssetsMigratedAt === undefined) {
+      try {
+        const result = moveLegacyAssets({
+          legacyDir: legacyAssetsDir(dataDir),
+          destination: assetsDir,
+        });
+        if (result.failed > 0)
+          console.warn(
+            `Logos legados: ${result.moved} movidos, ${result.failed} com falha (permanecem em ${legacyAssetsDir(dataDir)}).`,
+          );
+      } catch (error) {
+        console.warn(`Falha ao mover logos legados: ${error.message}`);
+      }
+      databaseManager.markLegacyAssetsMigrated();
+    }
     try {
-      const serverUrl = await server.start(databasePath);
+      const serverUrl = await server.start(databasePath, { assetsDir });
       activeDatabasePath = databasePath;
+      activeAssetsDir = assetsDir;
       mainWindow = new BrowserWindow({
         width: 1440,
         height: 900,

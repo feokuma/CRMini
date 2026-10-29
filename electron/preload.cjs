@@ -14,6 +14,7 @@ function subscribeToUpdateState(listener) {
 contextBridge.exposeInMainWorld("crmDesktop", {
   getDatabasePath: () => ipcRenderer.invoke("database:get-path"),
   chooseDatabase: () => ipcRenderer.invoke("database:choose"),
+  getAssetsPath: () => ipcRenderer.invoke("assets:get-path"),
   updates: {
     getState: () => ipcRenderer.invoke("updates:get-state"),
     check: () => ipcRenderer.invoke("updates:check"),

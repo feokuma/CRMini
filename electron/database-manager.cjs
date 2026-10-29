@@ -1,6 +1,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const sqlitePaths = require("../database/sqlite-paths.cjs");
+const assetsPaths = require("./assets-paths.cjs");
 
 const host = "127.0.0.1";
 const port = 3174;
@@ -21,21 +22,44 @@ function createDatabaseManager({
   const preferencesFile = () =>
     pathModule.join(app.getPath("userData"), "preferences.json");
 
-  function savedDatabasePath() {
+  // Preferências como objeto: ausência, JSON corrompido ou valor não-objeto
+  // valem `{}` (mesma tolerância do `savedDatabasePath` original).
+  function readPreferences() {
     try {
-      const databasePath = JSON.parse(fileSystem.readFileSync(preferencesFile(), "utf8")).databasePath;
-      return typeof databasePath === "string" && databasePath.trim() ? databasePath : null;
+      const parsed = JSON.parse(
+        fileSystem.readFileSync(preferencesFile(), "utf8"),
+      );
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+        ? parsed
+        : {};
     } catch {
-      return null;
+      return {};
     }
   }
 
-  function saveDatabasePath(databasePath) {
+  // Escrita atômica preservando os campos já existentes (ex.: marca de migração).
+  function savePreferences(patch) {
     fileSystem.mkdirSync(app.getPath("userData"), { recursive: true });
     const destination = preferencesFile();
     const temporary = `${destination}.${process.pid}.tmp`;
-    fileSystem.writeFileSync(temporary, JSON.stringify({ databasePath }, null, 2));
+    const next = { ...readPreferences(), ...patch };
+    fileSystem.writeFileSync(temporary, JSON.stringify(next, null, 2));
     fileSystem.renameSync(temporary, destination);
+  }
+
+  function savedDatabasePath() {
+    const databasePath = readPreferences().databasePath;
+    return typeof databasePath === "string" && databasePath.trim()
+      ? databasePath
+      : null;
+  }
+
+  function saveDatabasePath(databasePath) {
+    savePreferences({ databasePath });
+  }
+
+  function markLegacyAssetsMigrated(timestamp = new Date().toISOString()) {
+    savePreferences({ legacyAssetsMigratedAt: timestamp });
   }
 
   function trustedSender(event) {
@@ -50,6 +74,17 @@ function createDatabaseManager({
 
   function handleGetPath(event) {
     return trustedSender(event) ? savedDatabasePath() : null;
+  }
+
+  // Caminho da pasta de imagens exibido em Configurações (somente leitura, v1).
+  function handleGetAssetsPath(event) {
+    if (!trustedSender(event)) return null;
+    const databasePath = savedDatabasePath();
+    if (!databasePath) return null;
+    return assetsPaths.assetsDirFor({
+      databasePath,
+      dataDir: app.getPath("userData"),
+    });
   }
 
   async function handleChoose(event) {
@@ -155,10 +190,14 @@ function createDatabaseManager({
 
   return {
     preferencesFile,
+    readPreferences,
+    savePreferences,
     savedDatabasePath,
     saveDatabasePath,
+    markLegacyAssetsMigrated,
     trustedSender,
     handleGetPath,
+    handleGetAssetsPath,
     handleChoose,
     chooseDatabase,
   };
