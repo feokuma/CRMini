@@ -4,14 +4,92 @@ const path = require("node:path");
 const { applyMigrations } = require("./database-migrations.cjs");
 const { createDatabaseManager } = require("./database-manager.cjs");
 const { createServerLifecycle } = require("./server-lifecycle.cjs");
+const { createServerShutdown } = require("./server-shutdown.cjs");
 const { standaloneDir } = require("./resource-paths.cjs");
+const { createUpdater, registerUpdaterIpc } = require("./updater.cjs");
 
 const host = "127.0.0.1";
 const isDevelopment = process.argv.includes("--dev");
 const resourcesDir = standaloneDir({ app, isDevelopment, dirname: __dirname });
 const dataDir = app.getPath("userData");
 let mainWindow;
-let serverStoppedForQuit = false;
+// Uma falha ao parar o servidor não pode prender o app no `before-quit`; ela
+// libera a saída sem marcar o servidor como parado (contrato usado ao instalar).
+let quitAfterServerStopFailure = false;
+// Encerramento em curso: `onInstallError` não pode subir o servidor de novo e
+// deixá-lo órfão enquanto a saída já foi liberada.
+let quitting = false;
+// Caminho do banco em uso, para o servidor subir de novo se a instalação falhar.
+let activeDatabasePath;
+
+// `lastCheckAt` fica em userData no mesmo estilo tolerante de `preferences.json`:
+// arquivo ausente ou corrompido vale `null` e a falha de escrita nunca chega ao
+// app — perder o horário da última checagem só adia/antecipa a próxima.
+const updaterFile = path.join(dataDir, "updater.json");
+
+function readLastCheckAt() {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(updaterFile, "utf8"));
+    const value = Number(parsed?.lastCheckAt);
+    return Number.isFinite(value) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveLastCheckAt(timestamp) {
+  const value = Number(timestamp);
+  if (!Number.isFinite(value)) return;
+  const destination = updaterFile;
+  const temporary = `${destination}.${process.pid}.tmp`;
+  try {
+    fs.mkdirSync(path.dirname(destination), { recursive: true });
+    fs.writeFileSync(
+      temporary,
+      JSON.stringify({ lastCheckAt: value }, null, 2),
+    );
+    fs.renameSync(temporary, destination);
+  } catch (error) {
+    console.warn(
+      `Falha ao registrar a checagem de atualização: ${error.message}`,
+    );
+  }
+}
+
+// O feed vem de `resources/app-update.yml`; o electron-updater só é carregado
+// quando existe instalação real para atualizar. Qualquer falha aqui desabilita o
+// recurso em vez de impedir a abertura do CRM.
+function loadAutoUpdater() {
+  if (!app.isPackaged) return null;
+  const optOut = process.env.CRM_DISABLE_UPDATES;
+  if (
+    typeof optOut === "string" &&
+    ["1", "true", "yes"].includes(optOut.trim().toLowerCase())
+  ) {
+    return null;
+  }
+  const isPortable = [
+    "PORTABLE_EXECUTABLE_DIR",
+    "PORTABLE_EXECUTABLE_FILE",
+  ].some(
+    (key) =>
+      typeof process.env[key] === "string" && process.env[key].trim() !== "",
+  );
+  if (isPortable) return null;
+  try {
+    return require("electron-updater").autoUpdater ?? null;
+  } catch (error) {
+    console.warn(`electron-updater indisponível: ${error.message}`);
+    return null;
+  }
+}
+
+function broadcastUpdateState(snapshot) {
+  for (const window of BrowserWindow.getAllWindows()) {
+    if (window.isDestroyed()) continue;
+    window.webContents.send("updates:state", snapshot);
+  }
+}
 
 app.setAppUserModelId("br.com.crmini.app");
 
@@ -27,11 +105,16 @@ if (!gotLock) {
     host,
   });
 
+  // Parada única, compartilhada por `before-quit` e `beforeInstall`: quem chega
+  // depois reaproveita a mesma promessa em vez de iniciar outra parada. Em caso
+  // de falha a promessa é descartada, permitindo uma nova tentativa.
+  const shutdown = createServerShutdown({ stop: () => server.stop() });
+
   const databaseManager = createDatabaseManager({
     app,
     dialog,
     getMainWindow: () => mainWindow,
-    beforeRestart: () => server.stop(),
+    beforeRestart: () => shutdown.stopOnce(),
     getServerUrl: () => server.url,
   });
 
@@ -41,6 +124,67 @@ if (!gotLock) {
   ipcMain.handle("database:choose", (event) =>
     databaseManager.handleChoose(event),
   );
+
+  // Antes da janela: o preload já pode chamar `updates:*` no primeiro render e o
+  // estado inicial precisa estar disponível. O updater não segura a inicialização:
+  // `start()` só é chamado depois do `loadURL`.
+  const updater = createUpdater({
+    appInfo: { isPackaged: app.isPackaged, version: app.getVersion() },
+    autoUpdater: loadAutoUpdater(),
+    storage: {
+      getLastCheckAt: readLastCheckAt,
+      setLastCheckAt: saveLastCheckAt,
+    },
+    broadcast: broadcastUpdateState,
+    // Para o Next pela mesma promessa do `before-quit` e só libera a saída depois
+    // que o filho realmente encerrou; uma falha aborta a instalação (o chip
+    // mostra erro e o app continua aberto).
+    beforeInstall: async () => {
+      try {
+        await shutdown.stopOnce();
+      } catch (error) {
+        console.warn(
+          `Falha ao parar o servidor antes de atualizar: ${error.message}`,
+        );
+        throw error;
+      }
+    },
+    // A instalação falhou (o electron-updater avisa por evento): sobe o Next de
+    // novo, com o mesmo banco, para a janela não ficar com conteúdo morto.
+    onInstallError: async () => {
+      // O app já está saindo: reiniciar o Next aqui o deixaria órfão.
+      if (quitting) return;
+      if (!activeDatabasePath) return;
+      // Servidor ainda de pé (falha antes da parada): nada a restaurar.
+      if (!shutdown.stopped) return;
+      let serverUrl;
+      try {
+        serverUrl = await server.start(activeDatabasePath);
+      } catch (error) {
+        // Restaurar é melhor esforço: a falha aqui não pode derrubar o app.
+        console.warn(
+          `Falha ao reiniciar o servidor após erro de atualização: ${error.message}`,
+        );
+        return;
+      }
+      // Servidor de volta: a próxima saída precisa pará-lo de novo.
+      shutdown.reset();
+      if (!mainWindow || mainWindow.isDestroyed()) return;
+      try {
+        await mainWindow.loadURL(serverUrl);
+      } catch (error) {
+        console.warn(
+          `Falha ao recarregar a janela após reiniciar o servidor: ${error.message}`,
+        );
+      }
+    },
+  });
+
+  registerUpdaterIpc({
+    ipcMain,
+    updater,
+    trustedSender: databaseManager.trustedSender,
+  });
 
   app.on("second-instance", () => {
     if (mainWindow) {
@@ -97,6 +241,7 @@ if (!gotLock) {
     databaseManager.saveDatabasePath(databasePath);
     try {
       const serverUrl = await server.start(databasePath);
+      activeDatabasePath = databasePath;
       mainWindow = new BrowserWindow({
         width: 1440,
         height: 900,
@@ -123,6 +268,12 @@ if (!gotLock) {
         openExternal(url);
       });
       await mainWindow.loadURL(serverUrl);
+      // Idempotente: `activate` pode recriar a janela e não reinicia o agendador.
+      try {
+        updater.start();
+      } catch (error) {
+        console.warn(`Falha ao iniciar o atualizador: ${error.message}`);
+      }
     } catch (error) {
       console.error(error);
       app.quit();
@@ -138,12 +289,25 @@ if (!gotLock) {
     });
   app.on("window-all-closed", () => app.quit());
   app.on("before-quit", (event) => {
-    if (serverStoppedForQuit) return;
+    // Também no caminho que já libera a saída: o servidor parado não pode voltar.
+    quitting = true;
+    if (shutdown.stopped || quitAfterServerStopFailure) return;
     event.preventDefault();
-    server.stop().finally(() => {
-      serverStoppedForQuit = true;
-      app.quit();
-    });
+    shutdown.stopOnce().then(
+      () => {
+        // Só depois da parada concluída o before-quit seguinte pode passar.
+        app.quit();
+      },
+      (error) => {
+        // A falha não marca o servidor como parado, mas também não pode prender o
+        // app: libera esta saída e mantém o erro registrado.
+        console.warn(
+          `Falha ao parar o servidor antes de encerrar: ${error.message}`,
+        );
+        quitAfterServerStopFailure = true;
+        app.quit();
+      },
+    );
   });
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
