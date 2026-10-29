@@ -1,8 +1,10 @@
 {
   "name": "crmini",
   "version": "0.1.0",
+  "description": "CRM local para organizar empresas clientes, contatos, oportunidades e tarefas.",
   "main": "electron/main.cjs",
   "private": true,
+  "author": "CRMini",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -13,6 +15,8 @@
     "desktop:build": "npm run build && npm run prepare:standalone",
     "desktop": "npm run desktop:build && npm run check:electron-abi && electron electron/main.cjs",
     "desktop:dev": "electron electron/main.cjs --dev",
+    "package:win": "npm run desktop:build && electron-builder --win --x64",
+    "package:dir": "npm run desktop:build && electron-builder --dir",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md,yml,yaml,mjs,cjs,mts}\"",
     "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,css,md,yml,yaml,mjs,cjs,mts}\"",
@@ -38,11 +42,67 @@
     "@vitejs/plugin-react": "^6.1.2",
     "@vitest/coverage-v8": "^5.0.4",
     "electron": "^44.7.0",
+    "electron-builder": "^26.18.0",
     "eslint": "^9.0.0",
     "eslint-config-next": "^15.3.0",
     "jsdom": "^30.1.2",
     "prettier": "^3.9.10",
     "typescript": "^5.0.0",
     "vitest": "^5.0.4"
+  },
+  "build": {
+    "appId": "br.com.crmini.app",
+    "productName": "CRMini",
+    "directories": {
+      "output": "dist"
+    },
+    "npmRebuild": false,
+    "files": [
+      "electron/**/*",
+      "database/sqlite-paths.cjs",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "**/*.node"
+    ],
+    "extraResources": [
+      {
+        "from": ".next/standalone",
+        "to": "app"
+      },
+      {
+        "from": "public/brand/crmini-favicon.ico",
+        "to": "icon.ico"
+      }
+    ],
+    "win": {
+      "icon": "public/brand/crmini-favicon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "CRMini",
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "${productName}-${version}-setup.${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-portable.${ext}"
+    }
   }
 }

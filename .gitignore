@@ -16,3 +16,4 @@ database/*.sqlite.bak-*-shm
 database/*.sqlite.bak-*-wal
 
 coverage/
+dist/
