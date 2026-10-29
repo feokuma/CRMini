@@ -159,6 +159,16 @@ describe("electron-builder: standalone empacotado", () => {
       packagedStandaloneDir,
     );
   });
+
+  it("copia o node_modules do standalone em uma entrada própria", () => {
+    // O electron-builder não copia `node_modules` quando um diretório inteiro é
+    // levado para `resources`: sem a entrada separada, o servidor Next sobe sem
+    // dependências no app instalado.
+    const modulesEntry = resourceEntry(path.join("app", "node_modules"));
+
+    expect(modulesEntry.from).toBe(".next/standalone/node_modules");
+    expect(resourceEntry("app").from).toBe(".next/standalone");
+  });
 });
 
 describe("electron-builder: ícone da janela", () => {

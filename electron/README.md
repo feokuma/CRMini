@@ -57,7 +57,7 @@ O comando executa `desktop:build` (build + standalone) e gera em `dist/` o insta
 O pacote contém:
 
 - `resources/app.asar` — `electron/**/*`, `database/sqlite-paths.cjs` e as dependências de produção (o `better-sqlite3` usado pelo processo principal fica fora do asar via `asarUnpack: **/*.node`).
-- `resources/app/` — o standalone do Next (`extraResources` de `.next/standalone`), consumido por `standaloneDir()` como `process.resourcesPath/app`.
+- `resources/app/` — o standalone do Next (`extraResources` de `.next/standalone`), consumido por `standaloneDir()` como `process.resourcesPath/app`. O `node_modules` do standalone é copiado em uma entrada `extraResources` separada (`app/node_modules`), porque o electron-builder ignora `node_modules` ao levar um diretório inteiro para `resources`.
 - `resources/icon.ico` — cópia de `public/brand/crmini-favicon.ico` (em desenvolvimento, o ícone opcional vem de `build/icon.ico`).
 
 O build precisa rodar no Windows porque o `better-sqlite3` é carregado de um prebuild por plataforma/arquitetura; não há cross-build a partir de Linux. O `npmRebuild` fica desligado (`build.npmRebuild: false`) porque o `better-sqlite3` 13 traz prebuilds N-API compatíveis com Node e Electron (ver `scripts/check-electron-abi.cjs`), então `@electron/rebuild` não é necessário e só acrescentaria tempo e risco de compilar do fonte no runner.
