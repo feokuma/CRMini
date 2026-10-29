@@ -1998,3 +1998,133 @@ main.records-page .settings-actions {
     width: 100%;
   }
 }
+
+/* Chip global de atualização (aplicativo desktop). Exceção justificada ao §11 do
+   padrão visual: o chip precisa ficar visível em todas as telas e não existe
+   header global, por isso usa position: fixed no canto superior direito. */
+.update-chip {
+  position: fixed;
+  top: 12px;
+  right: 16px;
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100vw - 80px);
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 2px 8px #18241608;
+  color: var(--ink);
+  font:
+    500 12px "DM Sans",
+    sans-serif;
+}
+.update-chip[data-status="available"] {
+  background: var(--accent-soft);
+}
+.update-chip[data-status="downloaded"] {
+  border-color: var(--accent-dark);
+}
+.update-chip[data-status="error"] {
+  background: #fff2f2;
+  border-color: #f0d0d0;
+  color: #a33;
+}
+.update-chip-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.update-chip-error {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.update-chip-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font:
+    600 12px "DM Sans",
+    sans-serif;
+  color: inherit;
+  cursor: pointer;
+}
+.update-chip-action:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 3px #3986531c;
+}
+.update-chip-action:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+.update-chip-action--primary {
+  background: var(--accent-dark);
+  color: #fff;
+}
+.update-chip-action--secondary {
+  border-color: #f0d0d0;
+  background: transparent;
+  color: var(--accent-dark);
+}
+.update-chip-progress {
+  flex: none;
+  width: 64px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--wash);
+}
+.update-chip-progress > span {
+  display: block;
+  width: var(--update-progress, 0%);
+  height: 100%;
+  background: var(--accent);
+}
+.update-chip-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.update-chip-label-short {
+  display: none;
+}
+@media (max-width: 680px) {
+  .update-chip {
+    top: 8px;
+    right: 8px;
+  }
+  .update-chip-progress {
+    width: 40px;
+  }
+  .update-chip-action:has(.update-chip-label-short) .update-chip-label-long {
+    display: none;
+  }
+  .update-chip-action:has(.update-chip-label-short) .update-chip-label-short {
+    display: inline;
+  }
+}
+/* Alvo de toque do padrão visual (38 px) para o chip em telas estreitas. */
+@media (max-width: 600px) {
+  .update-chip-action {
+    min-height: 38px;
+  }
+}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import AppSidebar from "@/components/app-sidebar";
+import UpdateChip from "@/components/update-chip";
 
 export const metadata: Metadata = {
   title: "CRMini",
@@ -18,6 +19,7 @@ export default function RootLayout({
         <div className="app-shell">
           <AppSidebar />
           {children}
+          <UpdateChip />
         </div>
       </body>
     </html>
