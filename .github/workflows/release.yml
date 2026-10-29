@@ -1,6 +1,7 @@
 name: Release
 
-# Publica os instaladores do Windows no GitHub Releases ao enviar uma tag `v*`.
+# Publica os instaladores do Windows e os metadados do electron-updater
+# (`latest.yml` e `.blockmap`) no GitHub Releases ao enviar uma tag `v*`.
 on:
   push:
     tags:
@@ -88,6 +89,55 @@ jobs:
           }
           Write-Host "Pacote validado: $($prebuilds.Count) prebuild(s) do better-sqlite3 encontrado(s)."
 
+      # Confere os metadados consumidos pelo electron-updater: sem `latest.yml`
+      # com versão/hash, sem blockmap e sem `app-update.yml` apontando para o
+      # GitHub, o release é publicado mas nunca atualiza ninguém.
+      - name: Validar metadados de atualização
+        shell: pwsh
+        run: |
+          $packageVersion = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          $missing = @()
+
+          $latestYml = "dist/latest.yml"
+          if (-not (Test-Path -LiteralPath $latestYml -PathType Leaf)) {
+            $missing += $latestYml
+          } else {
+            $latestLines = Get-Content -LiteralPath $latestYml
+            # Aceita `version: 0.2.0` e variações com aspas/espaços; a versão é
+            # escapada para não interpretar pontos como curingas.
+            $versionPattern = '^\s*version:\s*["'']?' + [regex]::Escape($packageVersion) + '["'']?\s*$'
+            if (-not ($latestLines | Select-String -Pattern $versionPattern -Quiet)) {
+              $missing += "$latestYml com version '$packageVersion'"
+            }
+            if (-not ($latestLines | Select-String -Pattern '^\s*sha512:\s*\S+' -Quiet)) {
+              $missing += "$latestYml com sha512"
+            }
+          }
+
+          $blockmaps = @()
+          if (Test-Path -LiteralPath "dist" -PathType Container) {
+            $blockmaps = @(Get-ChildItem -LiteralPath "dist" -Filter "*.blockmap" -File)
+          }
+          if ($blockmaps.Count -eq 0) {
+            $missing += "dist/*.blockmap"
+          }
+
+          $appUpdateYml = "dist/win-unpacked/resources/app-update.yml"
+          if (-not (Test-Path -LiteralPath $appUpdateYml -PathType Leaf)) {
+            $missing += $appUpdateYml
+          } elseif (-not (Get-Content -LiteralPath $appUpdateYml | Select-String -Pattern '^\s*provider:\s*["'']?github["'']?\s*$' -Quiet)) {
+            $missing += "$appUpdateYml com provider: github"
+          }
+
+          if ($missing.Count -gt 0) {
+            foreach ($item in $missing) {
+              Write-Host "::error::Atualização automática inválida: item ausente em '$item'."
+            }
+            Write-Host "Validação dos metadados de atualização falhou: $($missing.Count) item(ns) ausente(s)."
+            exit 1
+          }
+          Write-Host "Metadados de atualização validados: version '$packageVersion' e $($blockmaps.Count) blockmap(s)."
+
       # Mantém os executáveis disponíveis na execução (inclusive no
       # workflow_dispatch, que não publica release). `success()` em vez de
       # `always()` para não mascarar uma falha real do empacotamento com o erro
@@ -97,7 +147,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: crmini-windows
-          path: dist/*.exe
+          path: |
+            dist/*.exe
+            dist/latest.yml
+            dist/*.blockmap
           if-no-files-found: error
           retention-days: 7
 
@@ -105,6 +158,10 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.exe
+          files: |
+            dist/*.exe
+            dist/latest.yml
+            dist/*.blockmap
           fail_on_unmatched_files: true
           draft: false
+          prerelease: false

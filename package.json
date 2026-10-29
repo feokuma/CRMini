@@ -1,6 +1,6 @@
 {
   "name": "crmini",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "CRM local para organizar empresas clientes, contatos, oportunidades e tarefas.",
   "main": "electron/main.cjs",
   "private": true,
@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",
+    "electron-updater": "^6.8.12",
     "next": "^15.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
@@ -55,6 +56,12 @@
     "productName": "CRMini",
     "directories": {
       "output": "dist"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "feokuma",
+      "repo": "crminho",
+      "releaseType": "release"
     },
     "npmRebuild": false,
     "files": [
