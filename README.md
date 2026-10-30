@@ -60,11 +60,11 @@ O aplicativo desktop é distribuído pelo GitHub Releases: enviar uma tag `vX.Y.
 
 Para publicar uma versão:
 
-1. Atualize `version` no `package.json` (ex.: `0.2.0`) e faça commit.
-2. Crie a tag no mesmo valor, com o prefixo `v`: `git tag v0.2.0`.
-3. Envie a tag: `git push origin v0.2.0`.
+1. Atualize `version` no `package.json` e no `package-lock.json` (prefira `npm version X.Y.Z --no-git-tag-version`) e faça um commit de versionamento.
+2. Crie uma tag anotada no mesmo valor, com o prefixo `v`: `git tag -a vX.Y.Z -m "🔖 CRMini X.Y.Z"`.
+3. Envie o commit e a tag: `git push origin main && git push origin vX.Y.Z`.
 
-O workflow falha se a versão da tag (sem o `v`) não for idêntica à `version` do `package.json`. Ele também pode ser executado manualmente (`workflow_dispatch`): nesse caso o build e o empacotamento rodam, mas nenhuma release é publicada; os `.exe` gerados ficam disponíveis no artefato `crmini-windows` da execução (retenção de 7 dias).
+O critério de escolha do número (SemVer e a política para versões `0.x`) e o checklist completo estão em [`.agents/skills/release-semver/SKILL.md`](./.agents/skills/release-semver/SKILL.md). O workflow falha se a versão da tag (sem o `v`) não for idêntica à `version` do `package.json`. Ele também pode ser executado manualmente (`workflow_dispatch`): nesse caso o build e o empacotamento rodam, mas nenhuma release é publicada; os `.exe` gerados ficam disponíveis no artefato `crmini-windows` da execução (retenção de 7 dias).
 
 Cada execução disparada por tag anexa dois artefatos:
 
