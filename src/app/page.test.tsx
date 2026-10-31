@@ -1,5 +1,11 @@
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const { getUserName, getGreeting, getDashboardDate } = vi.hoisted(() => ({
+  getUserName: vi.fn(),
+  getGreeting: vi.fn(),
+  getDashboardDate: vi.fn(),
+}));
 
 vi.mock("next/link", () => ({
   default: ({ href, children, ...props }: React.ComponentProps<"a"> & { href: string }) => (
@@ -10,12 +16,36 @@ vi.mock("next/link", () => ({
 }));
 
 vi.mock("@/lib/db", () => ({
-  getDb: () => {
-    throw new Error("Banco indisponível no teste");
-  },
+  getDb: () => ({
+    prepare: () => ({
+      all: () => [],
+      get: () => ({
+        contacts_count: 0,
+        opportunities_count: 0,
+        open_opportunities_count: 0,
+        won_count: 0,
+        lost_count: 0,
+        open_values: "[]",
+      }),
+    }),
+  }),
 }));
 
+vi.mock("@/lib/repositories/settings", () => ({ getUserName }));
+vi.mock("@/lib/greeting", () => ({ getGreeting, getDashboardDate }));
+
 import Home, { dynamic } from "./page";
+
+beforeEach(() => {
+  getUserName.mockReset();
+  getGreeting.mockReset();
+  getDashboardDate.mockReset();
+  getUserName.mockResolvedValue(null);
+  getDashboardDate.mockReturnValue("SÁBADO, 1 DE FEVEREIRO");
+  getGreeting.mockImplementation((_date: Date, name?: string | null) =>
+    name ? `Bom dia, ${name}` : "Bom dia",
+  );
+});
 
 afterEach(() => cleanup());
 
@@ -30,5 +60,41 @@ describe("Visão geral", () => {
     expect(
       screen.getByRole("link", { name: "＋ Novo contato" }),
     ).toHaveAttribute("href", "/contatos/novo");
+  });
+
+  it("saudação recebe o nome configurado e o exibe no heading", async () => {
+    getUserName.mockResolvedValue("Ana");
+
+    render(await Home());
+
+    expect(getGreeting).toHaveBeenCalledWith(expect.any(Date), "Ana");
+    expect(
+      screen.getByRole("heading", { level: 1 }),
+    ).toHaveTextContent("Bom dia, Ana");
+  });
+
+  it("sem nome configurado, saúda sem sufixo e recebe null", async () => {
+    getUserName.mockResolvedValue(null);
+
+    render(await Home());
+
+    expect(getGreeting).toHaveBeenCalledWith(expect.any(Date), null);
+    const heading = screen.getByRole("heading", { level: 1 });
+    expect(heading).toHaveTextContent("Bom dia");
+    expect(heading).not.toHaveTextContent(", Ana");
+  });
+
+  it("continua renderizando e saúda sem nome quando o repositório falha", async () => {
+    getUserName.mockRejectedValue(new Error("database is locked"));
+
+    render(await Home());
+
+    expect(getGreeting).toHaveBeenCalledWith(expect.any(Date), null);
+    expect(
+      screen.getByRole("heading", { level: 1 }),
+    ).toHaveTextContent("Bom dia");
+    expect(
+      screen.getByRole("link", { name: "＋ Novo contato" }),
+    ).toBeInTheDocument();
   });
 });

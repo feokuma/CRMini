@@ -103,6 +103,7 @@ describe("getDb com CRM_RESOURCES_DIR", () => {
     const db = getDb();
 
     expect(tableNames(db)).toEqual([
+      "app_settings",
       "clients",
       "contacts",
       "opportunities",

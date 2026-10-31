@@ -13,6 +13,8 @@ import {
 import { saoPauloDayRange } from "./task-date";
 import { validateTask } from "./task-validation";
 
+const anaNameSuffixPattern = /, Ana$/;
+
 describe("regras de tarefas", () => {
   const validTask = {
     contact_type: "email",
@@ -76,15 +78,18 @@ describe("duração e apresentação de datas", () => {
 
 describe("saudação e métricas do painel", () => {
   it("escolhe a saudação conforme hora de Brasília", () => {
-    expect(getGreeting(new Date("2026-10-12T10:00:00-03:00"))).toMatch(
-      /, Djardi$/,
-    );
-    expect(getGreeting(new Date("2026-10-12T15:00:00-03:00"))).toMatch(
-      /, Djardi$/,
-    );
-    expect(getGreeting(new Date("2026-10-12T21:00:00-03:00"))).toMatch(
-      /, Djardi$/,
-    );
+    expect(
+      getGreeting(new Date("2026-10-12T10:00:00-03:00"), "Ana"),
+    ).toMatch(anaNameSuffixPattern);
+    expect(
+      getGreeting(new Date("2026-10-12T15:00:00-03:00"), "Ana"),
+    ).toMatch(anaNameSuffixPattern);
+    expect(
+      getGreeting(new Date("2026-10-12T21:00:00-03:00"), "Ana"),
+    ).toMatch(anaNameSuffixPattern);
+    expect(
+      getGreeting(new Date("2026-10-12T10:00:00-03:00")),
+    ).not.toMatch(anaNameSuffixPattern);
   });
 
   it("agrega conversão sobre oportunidades encerradas e valores por moeda", async () => {

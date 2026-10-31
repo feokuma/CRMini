@@ -1,23 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { getDashboardDate, getGreeting } from "./greeting";
 
-const greetingNameSuffixPattern = /, Djardi$/;
 const commonGreetingPrefixPattern = /^(Bom dia|Boa tarde|Boa noite)/;
 
 describe("getGreeting", () => {
   it("seleciona a saudação pelas faixas horárias de São Paulo", () => {
-    const beforeNoon = getGreeting(new Date("2025-02-01T14:59:00Z"));
-    const noon = getGreeting(new Date("2025-02-01T15:00:00Z"));
-    const beforeEvening = getGreeting(new Date("2025-02-01T20:59:00Z"));
-    const evening = getGreeting(new Date("2025-02-01T21:00:00Z"));
-
-    expect(greetingNameSuffixPattern.test(beforeNoon)).toBe(true);
-    expect(greetingNameSuffixPattern.test(noon)).toBe(true);
-    expect(greetingNameSuffixPattern.test(beforeEvening)).toBe(true);
-    expect(greetingNameSuffixPattern.test(evening)).toBe(true);
-    expect(
-      getGreeting(new Date("2025-02-01T15:00:00Z"), "Ana").endsWith(", Ana"),
-    ).toBe(true);
+    // 2025-02-04 seleciona o primeiro item de cada faixa (dia % 12 === 0).
+    expect(getGreeting(new Date("2025-02-04T14:59:00Z"))).toBe("Bom dia");
+    expect(getGreeting(new Date("2025-02-04T15:00:00Z"))).toBe("Boa tarde");
+    expect(getGreeting(new Date("2025-02-04T20:59:00Z"))).toBe("Boa tarde");
+    expect(getGreeting(new Date("2025-02-04T21:00:00Z"))).toBe("Boa noite");
   });
 
   it("varia diariamente entre saudações comuns e religiosas", () => {
@@ -37,6 +29,25 @@ describe("getGreeting", () => {
     ).toBe(true);
     expect(getGreeting(new Date("2025-02-01T15:00:00Z"))).toBe(
       getGreeting(new Date("2025-02-01T15:00:00Z")),
+    );
+  });
+});
+
+describe("getGreeting com nome", () => {
+  const fixedDate = new Date("2025-02-01T15:00:00Z");
+  const greetingWithoutName = getGreeting(fixedDate);
+
+  it("não adiciona sufixo quando o nome está ausente ou vazio", () => {
+    expect(getGreeting(fixedDate)).toBe(greetingWithoutName);
+    for (const name of [null, undefined, "", "   ", "\t\n"]) {
+      expect(getGreeting(fixedDate, name)).toBe(greetingWithoutName);
+    }
+  });
+
+  it("adiciona o nome trimado como sufixo quando informado", () => {
+    expect(getGreeting(fixedDate, "Ana")).toBe(`${greetingWithoutName}, Ana`);
+    expect(getGreeting(fixedDate, "  Ana  ")).toBe(
+      `${greetingWithoutName}, Ana`,
     );
   });
 });

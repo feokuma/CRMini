@@ -10,6 +10,7 @@ import {
   type DashboardMetricRow,
 } from "@/lib/dashboard-metrics";
 import { getDashboardDate, getGreeting } from "@/lib/greeting";
+import { getUserName } from "@/lib/repositories/settings";
 
 const avatarColors = ["peach", "blue", "green", "lilac"];
 
@@ -19,6 +20,7 @@ export const dynamic = "force-dynamic";
 
 export default async function Home() {
   let opportunities: RecentOpportunity[] = [];
+  let userName: string | null = null;
   let stats = {
     contactsCount: 0,
     opportunitiesCount: 0,
@@ -28,13 +30,14 @@ export default async function Home() {
   };
   try {
     const db = getDb();
-    [opportunities, stats] = await Promise.all([
+    [opportunities, stats, userName] = await Promise.all([
       getRecentOpportunities((sql) => ({
         rows: db.prepare(sql).all() as RecentOpportunity[],
       })),
       getDashboardMetrics((sql) => ({
         rows: [db.prepare(sql).get() as DashboardMetricRow],
       })),
+      getUserName(),
     ]);
   } catch {
     // A página permanece acessível se o banco estiver temporariamente indisponível.
@@ -49,7 +52,7 @@ export default async function Home() {
           <div>
             <p className="eyebrow">{getDashboardDate()}</p>
             <h1>
-              {getGreeting()} <span>✳</span>
+              {getGreeting(new Date(), userName)} <span>✳</span>
             </h1>
             <p className="subheading">
               Aqui está o resumo do que acontece no seu espaço.

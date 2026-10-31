@@ -45,7 +45,10 @@ const greetings = {
   ],
 } as const satisfies Record<GreetingPeriod, readonly string[]>;
 
-export function getGreeting(date: Date = new Date(), name = "Djardi"): string {
+export function getGreeting(
+  date: Date = new Date(),
+  name?: string | null,
+): string {
   const parts = new Intl.DateTimeFormat("en-US", {
     hour: "numeric",
     hourCycle: "h23",
@@ -63,9 +66,10 @@ export function getGreeting(date: Date = new Date(), name = "Djardi"): string {
     hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
   const dayKey =
     getPart("year") * 10000 + getPart("month") * 100 + getPart("day");
-  const options = greetings[period];
+  const phrase = greetings[period][dayKey % greetings[period].length];
+  const trimmedName = name?.trim();
 
-  return `${options[dayKey % options.length]}, ${name}`;
+  return trimmedName ? `${phrase}, ${trimmedName}` : phrase;
 }
 
 export function getDashboardDate(date: Date = new Date()): string {
